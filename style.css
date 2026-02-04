@@ -1,0 +1,131 @@
+/* ---------- RESET & BASIC ---------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ---------- BODY ---------- */
+body {
+    background-color: #121212; /* dark mode */
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* ---------- MAIN APP CONTAINER ---------- */
+.app {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 450px;
+    height: 90vh;
+    background-color: #1e1e1e;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* ---------- HEADER ---------- */
+.header {
+    padding: 20px;
+    text-align: center;
+    background-color: #272727;
+    border-bottom: 1px solid #333;
+}
+
+.header h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.header p {
+    font-size: 14px;
+    color: #aaa;
+}
+
+/* ---------- CHAT CONTAINER ---------- */
+.chat-container {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #555 #1e1e1e;
+}
+
+/* Scrollbar for Chrome/Safari */
+.chat-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-container::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 3px;
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background-color: #1e1e1e;
+}
+
+/* ---------- MESSAGES ---------- */
+.message {
+    max-width: 80%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+/* Bot messages */
+.message.bot {
+    background-color: #333;
+    align-self: flex-start;
+}
+
+/* User messages */
+.message.user {
+    background-color: #4a90e2;
+    align-self: flex-end;
+    color: #fff;
+}
+
+/* ---------- INPUT AREA ---------- */
+.input-area {
+    display: flex;
+    padding: 10px 15px;
+    background-color: #272727;
+    border-top: 1px solid #333;
+}
+
+.input-area input {
+    flex: 1;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    background-color: #1e1e1e;
+    color: #fff;
+    font-size: 14px;
+}
+
+.input-area button {
+    margin-left: 10px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 20px;
+    background-color: #4a90e2;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.input-area button:hover {
+    background-color: #357ab7;
+}
