@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 🔥 NEW fetch with system prompt
+    // Correct fetch to Gemini API
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
         process.env.GEMINI_API_KEY,
@@ -23,7 +23,10 @@ export default async function handler(req, res) {
               {
                 role: "system",
                 content: [
-                  { type: "text", text: "You are Harsh GPT, a helpful, friendly AI assistant." }
+                  {
+                    type: "text",
+                    text: "You are Harsh GPT, a friendly AI assistant that always replies helpfully."
+                  }
                 ]
               },
               {
@@ -40,17 +43,15 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
+    // ✅ Correct reading of the reply
     const reply =
-      data.candidates &&
-      data.candidates[0] &&
-      data.candidates[0].content &&
-      data.candidates[0].content[0]?.text
-        ? data.candidates[0].content[0].text
-        : "Gemini responded but had nothing to say 🤔";
+      data?.candidates?.[0]?.content?.find(c => c.type === "text")?.text ||
+      "Gemini responded but had nothing to say 🤔";
 
     res.status(200).json({ reply });
 
   } catch (error) {
+    console.error(error); // log error for debugging
     res.status(500).json({ reply: "Harsh GPT crashed 😢" });
   }
 }
