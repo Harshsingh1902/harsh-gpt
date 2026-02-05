@@ -1,6 +1,10 @@
 {
+  "name": "harsh-gpt",
+  "version": "1.0.0",
   "dependencies": {
-    "@supabase/supabase-js": "latest",
-    "node-fetch": "2"
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "engines": {
+    "node": "18.x"
   }
 }
