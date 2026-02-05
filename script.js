@@ -1,112 +1,121 @@
-// 1. INITIALIZE SUPABASE
+// 1. SAFE INITIALIZATION
 const SUPABASE_URL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 
-// We wrap initialization in a check to make sure the library is loaded
 let supabase;
-if (window.supabase) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("Supabase is ready!");
-} else {
-    console.error("Supabase CDN not found! Check your index.html script tags.");
-}
 
-// 2. DOM ELEMENTS
-const sendBtn = document.getElementById("sendBtn");
-const userInput = document.getElementById("userInput");
-const chatContainer = document.getElementById("chatContainer");
-const voiceBtn = document.getElementById("voiceBtn");
-const imageInput = document.getElementById("imageInput");
-const loginBtn = document.getElementById("loginBtn");
-const accountBtn = document.getElementById("accountBtn");
+// This function runs ONLY after the page is fully loaded
+window.onload = () => {
+    console.log("Page loaded, initializing features...");
 
-// 3. VOICE LOGIC (MIC 🎤)
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang = 'en-US';
-recognition.continuous = false;
-
-voiceBtn.onclick = () => {
+    // Initialize Supabase safely
     try {
-        recognition.start();
-        voiceBtn.textContent = "🛑"; // Change mic to stop icon
-        console.log("Mic is listening...");
+        if (window.supabase) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log("Supabase Ready");
+            setupAuth();
+        }
     } catch (e) {
-        console.error("Mic error:", e);
+        console.error("Supabase load error:", e);
     }
+
+    setupChat();
+    setupVoice();
 };
 
-recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    userInput.value = transcript;
-    voiceBtn.textContent = "🎤"; // Reset to mic icon
-    handleSend(); // Auto-send after speaking
-};
+// 2. AUTHENTICATION (Login/Logout)
+function setupAuth() {
+    const loginBtn = document.getElementById("loginBtn");
+    const accountBtn = document.getElementById("accountBtn");
 
-recognition.onerror = () => {
-    voiceBtn.textContent = "🎤";
-    console.log("Mic stopped or error occurred.");
-};
+    if (loginBtn) {
+        loginBtn.onclick = async () => {
+            await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin }
+            });
+        };
+    }
 
-recognition.onend = () => {
-    voiceBtn.textContent = "🎤";
-};
+    if (accountBtn) {
+        accountBtn.onclick = async () => {
+            await supabase.auth.signOut();
+            window.location.reload();
+        };
+    }
 
-// 4. AUTHENTICATION (GOOGLE LOGIN)
-if (loginBtn) {
-    loginBtn.onclick = async () => {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: window.location.origin }
-        });
-        if (error) console.error("Login Error:", error.message);
-    };
-}
-
-if (accountBtn) {
-    accountBtn.onclick = async () => {
-        await supabase.auth.signOut();
-        window.location.reload();
-    };
-}
-
-// Update UI when logged in
-if (supabase) {
     supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
-            loginBtn.style.display = 'none';
-            accountBtn.style.display = 'block';
+            if (loginBtn) loginBtn.style.display = 'none';
+            if (accountBtn) accountBtn.style.display = 'block';
         } else {
-            loginBtn.style.display = 'block';
-            accountBtn.style.display = 'none';
+            if (loginBtn) loginBtn.style.display = 'block';
+            if (accountBtn) accountBtn.style.display = 'none';
         }
     });
 }
 
-// 5. CHAT LOGIC (SENDING MESSAGES)
-function addMessage(content, sender) {
-    const div = document.createElement("div");
-    div.classList.add("message", sender);
-    div.textContent = content;
-    chatContainer.appendChild(div);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+// 3. VOICE LOGIC (MIC 🎤)
+function setupVoice() {
+    const voiceBtn = document.getElementById("voiceBtn");
+    const userInput = document.getElementById("userInput");
+
+    if (!voiceBtn) return;
+
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    
+    voiceBtn.onclick = () => {
+        try {
+            recognition.start();
+            voiceBtn.textContent = "🛑";
+        } catch (e) {
+            recognition.stop();
+            voiceBtn.textContent = "🎤";
+        }
+    };
+
+    recognition.onresult = (event) => {
+        userInput.value = event.results[0][0].transcript;
+        voiceBtn.textContent = "🎤";
+        handleSend(); 
+    };
+
+    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
+}
+
+// 4. CHAT LOGIC
+function setupChat() {
+    const sendBtn = document.getElementById("sendBtn");
+    const userInput = document.getElementById("userInput");
+
+    if (sendBtn) sendBtn.onclick = handleSend;
+    if (userInput) {
+        userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
+    }
 }
 
 async function handleSend() {
+    const userInput = document.getElementById("userInput");
+    const chatContainer = document.getElementById("chatContainer");
     const message = userInput.value.trim();
+
     if (!message) return;
 
-    // Show your message
-    addMessage(message, "user");
+    // UI: Add User Message
+    const userDiv = document.createElement("div");
+    userDiv.className = "message user";
+    userDiv.textContent = message;
+    chatContainer.appendChild(userDiv);
     userInput.value = "";
 
-    // Show bot thinking
+    // UI: Add Bot Thinking
     const botDiv = document.createElement("div");
-    botDiv.classList.add("message", "bot");
+    botDiv.className = "message bot";
     botDiv.textContent = "Harsh GPT is thinking...";
     chatContainer.appendChild(botDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
-        // Check if user is logged in
         let userId = "guest";
         if (supabase) {
             const { data } = await supabase.auth.getUser();
@@ -118,17 +127,9 @@ async function handleSend() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message, userId })
         });
-        
         const data = await response.json();
-        botDiv.textContent = data.reply || "I'm having trouble thinking right now.";
+        botDiv.textContent = data.reply;
     } catch (error) {
-        botDiv.textContent = "Error: Check your Vercel logs.";
-        console.error("Fetch error:", error);
+        botDiv.textContent = "Error: Check backend.";
     }
 }
-
-// 6. EVENT LISTENERS
-sendBtn.onclick = handleSend;
-userInput.onkeydown = (e) => { 
-    if (e.key === "Enter") handleSend(); 
-};
