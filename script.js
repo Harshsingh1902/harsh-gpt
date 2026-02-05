@@ -67,16 +67,24 @@ if (_sbClient) {
         }
     };
 
+    // INTEGRATED AUTH CHANGE LOGIC
     _sbClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
+            
+            // NEW: DYNAMIC WELCOME MESSAGE AFTER LOGIN
+            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
+            
             loadHistory(session.user.id);
         } else {
             loginBtn.style.display = 'block';
             accountBtn.style.display = 'none';
             if (menuBtn) menuBtn.style.display = 'none';
+            
+            // NEW: RESET MESSAGE ON LOGOUT
+            chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
         }
     });
 }
@@ -114,7 +122,7 @@ if (voiceBtn) {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     
     voiceBtn.onclick = () => {
-        voiceBtn.style.background = "transparent"; // Ensure no white background
+        voiceBtn.style.background = "transparent"; 
         recognition.start();
         voiceBtn.textContent = "🛑";
     };
