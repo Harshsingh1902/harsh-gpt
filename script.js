@@ -2,106 +2,63 @@
 const SUPABASE_URL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 
-let supabase;
+// Use this specific 'window' check to prevent the "Supabase is not defined" error
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Wrapping in an Init function to prevent global scope crashes
-function initApp() {
-    console.log("App starting...");
-    try {
-        // MUST use window.supabase when using the CDN
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log("Supabase initialized!");
-    } catch (err) {
-        console.error("Supabase init failed:", err);
-        return;
-    }
+// 2. DOM ELEMENTS
+const sendBtn = document.getElementById("sendBtn");
+const userInput = document.getElementById("userInput");
+const chatContainer = document.getElementById("chatContainer");
+const loginBtn = document.getElementById("loginBtn");
+const accountBtn = document.getElementById("accountBtn");
 
-    const sendBtn = document.getElementById("sendBtn");
-    const userInput = document.getElementById("userInput");
-    const chatContainer = document.getElementById("chatContainer");
-    const loginBtn = document.getElementById("loginBtn");
-    const accountBtn = document.getElementById("accountBtn");
-
-    // 2. AUTHENTICATION
-    if (loginBtn) {
-        loginBtn.onclick = async () => {
-            console.log("Login clicked");
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.origin }
-            });
-            if (error) console.error(error);
-        };
-    }
-
-    if (accountBtn) {
-        accountBtn.onclick = async () => {
-            await supabase.auth.signOut();
-            window.location.reload();
-        };
-    }
-
-    // Watch for user login state
-    supabase.auth.onAuthStateChange((event, session) => {
-        console.log("Auth event:", event);
-        if (session) {
-            loginBtn.style.display = 'none';
-            accountBtn.style.display = 'block';
-        } else {
-            loginBtn.style.display = 'block';
-            accountBtn.style.display = 'none';
-        }
-    });
-
-    // 3. SEND LOGIC
-    async function handleSend() {
-        console.log("Send clicked");
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-            alert("Please login first!");
-            return;
-        }
-
-        const message = userInput.value.trim();
-        if (!message) return;
-
-        // Add user message to UI
-        const userDiv = document.createElement("div");
-        userDiv.className = "message user";
-        userDiv.textContent = message;
-        chatContainer.appendChild(userDiv);
-        userInput.value = "";
-
-        // Add temporary bot message
-        const botDiv = document.createElement("div");
-        botDiv.className = "message bot";
-        botDiv.textContent = "Harsh GPT is thinking...";
-        chatContainer.appendChild(botDiv);
-
-        try {
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message, userId: user.id })
-            });
-            const data = await response.json();
-            botDiv.textContent = data.reply;
-        } catch (error) {
-            botDiv.textContent = "Error: Backend not reachable.";
-            console.error(error);
-        }
-        
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    if (sendBtn) sendBtn.onclick = handleSend;
-    if (userInput) {
-        userInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") handleSend();
+// 3. AUTH LOGIC (Wrapped in checks to prevent crashing)
+if (loginBtn) {
+    loginBtn.onclick = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin }
         });
+        if (error) alert(error.message);
+    };
+}
+
+// 4. THE SEND BUTTON FIX
+async function handleSend() {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    // Show your message immediately
+    const userDiv = document.createElement("div");
+    userDiv.className = "message user";
+    userDiv.textContent = message;
+    chatContainer.appendChild(userDiv);
+    userInput.value = "";
+
+    // Show bot "thinking"
+    const botDiv = document.createElement("div");
+    botDiv.className = "message bot";
+    botDiv.textContent = "Harsh GPT is thinking...";
+    chatContainer.appendChild(botDiv);
+
+    try {
+        // Check for user (Optional for now to keep chat working even if logged out)
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                message: message, 
+                userId: user ? user.id : "guest" // Fallback to guest so it doesn't break
+            })
+        });
+        const data = await response.json();
+        botDiv.textContent = data.reply;
+    } catch (e) {
+        botDiv.textContent = "Error: Check your Vercel logs.";
     }
 }
 
-// Start everything
-window.onload = initApp;
+// Attach the listener
+if (sendBtn) sendBtn.onclick = handleSend;
