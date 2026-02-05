@@ -1,10 +1,49 @@
+// 1. INITIALIZE SUPABASE
+// Replace these with your actual keys from Supabase Dashboard > Settings > API
+const SUPABASE_URL = 'https://your-project-url.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 2. DOM ELEMENTS
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const chatContainer = document.getElementById("chatContainer");
 const voiceBtn = document.getElementById("voiceBtn");
 const imageInput = document.getElementById("imageInput");
+const loginBtn = document.getElementById("loginBtn");
+const accountBtn = document.getElementById("accountBtn");
 
-// Add message to UI
+// 3. AUTHENTICATION LOGIC
+// Handle Login
+loginBtn.onclick = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google', // Or 'github'
+    });
+    if (error) console.error("Login error:", error.message);
+};
+
+// Handle Logout
+accountBtn.onclick = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Logout error:", error.message);
+};
+
+// Listen for Auth Changes (Login/Logout)
+supabase.auth.onAuthStateChange((event, session) => {
+    if (session) {
+        // User is logged in
+        loginBtn.style.display = 'none';
+        accountBtn.style.display = 'block';
+        console.log("Logged in as:", session.user.email);
+    } else {
+        // User is logged out
+        loginBtn.style.display = 'block';
+        accountBtn.style.display = 'none';
+        chatContainer.innerHTML = '<div class="message bot">Please login to enable permanent memory!</div>';
+    }
+});
+
+// 4. CHAT LOGIC
 function addMessage(content, sender, isHTML = false) {
     const div = document.createElement("div");
     div.classList.add("message", sender);
@@ -17,8 +56,14 @@ function addMessage(content, sender, isHTML = false) {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// Handle sending text
 async function handleSend() {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+        alert("Please login first so I can remember you!");
+        return;
+    }
+
     const message = userInput.value.trim();
     if (!message) return;
 
@@ -34,7 +79,10 @@ async function handleSend() {
         const response = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({ 
+                message, 
+                userId: user.id // Send unique ID to your backend
+            })
         });
         const data = await response.json();
         botDiv.textContent = data.reply;
@@ -43,23 +91,21 @@ async function handleSend() {
     }
 }
 
-// --- VOICE FEATURE ---
+// 5. VOICE & IMAGE FEATURES
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 voiceBtn.onclick = () => {
     recognition.start();
-    voiceBtn.textContent = "🛑"; // Change icon while listening
+    voiceBtn.textContent = "🛑";
 };
 
 recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript;
-    userInput.value = transcript;
+    userInput.value = event.results[0][0].transcript;
     voiceBtn.textContent = "🎤";
     handleSend();
 };
 
 recognition.onerror = () => { voiceBtn.textContent = "🎤"; };
 
-// --- IMAGE FEATURE ---
 imageInput.onchange = () => {
     const file = imageInput.files[0];
     if (file) {
@@ -72,5 +118,6 @@ imageInput.onchange = () => {
     }
 };
 
+// Event Listeners
 sendBtn.onclick = handleSend;
 userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
