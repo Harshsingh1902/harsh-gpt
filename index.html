@@ -4,17 +4,65 @@
     <meta charset="UTF-8">
     <title>Harsh GPT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="font-default"> <div id="sidebar" class="sidebar-closed">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
+            <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
+        </div>
+        
+        <div class="history-section">
+            <h4>Recent History</h4>
+            <div id="chat-history-list">
+                <p class="empty-history">No recent chats</p>
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
+            <button class="footer-btn logout-btn" id="logoutBtn" style="display:none" onclick="handleLogout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button onclick="closeSettings()" class="close-modal">✕</button>
+            </div>
+            
+            <div class="setting-group">
+                <label>Appearance (Theme)</label>
+                <div class="theme-grid">
+                    <button class="theme-btn antariksh" onclick="setTheme('antariksh')">Antariksh</button>
+                    <button class="theme-btn aakash" onclick="setTheme('aakash')">Aakash</button>
+                    <button class="theme-btn ksheer" onclick="setTheme('ksheer')">Ksheer</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Personalization (Font)</label>
+                <select id="fontSelect" onchange="setFont(this.value)">
+                    <option value="font-default">Default (Inter)</option>
+                    <option value="font-whatsapp">WhatsApp Style</option>
+                    <option value="font-modern">Modern (Poppins)</option>
+                </select>
+            </div>
+
+            <div class="setting-group footer-links">
+                <p>Safety & Privacy Policy</p>
+                <a href="mailto:your-email@gmail.com?subject=HarshGPT Help">Help: Contact Developer</a>
+            </div>
+        </div>
+    </div>
 
     <div class="app">
         <header class="header">
             <div class="nav-left">
-                <button class="icon-btn" id="menuBtn">☰</button>
+                <button class="icon-btn" id="menuBtn" onclick="toggleSidebar()" style="display:none">☰</button>
             </div>
             <div class="nav-center">
                 <h1>Harsh GPT</h1>
@@ -22,7 +70,7 @@
             </div>
             <div class="nav-right">
                 <button id="loginBtn" class="auth-btn">Login</button>
-                <button id="accountBtn" class="icon-btn" style="display:none">👤</button>
+                <button id="accountBtn" class="icon-btn" style="display:none" onclick="toggleSidebar()">👤</button>
             </div>
         </header>
 
