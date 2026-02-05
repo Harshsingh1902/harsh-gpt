@@ -1,9 +1,5 @@
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ reply: "Method not allowed." });
-  
   const { message } = req.body;
-  if (!message) return res.status(400).json({ reply: "No message provided!" });
-
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -18,16 +14,9 @@ module.exports = async (req, res) => {
     });
 
     const data = await response.json();
-
-    if (data.error) {
-      return res.status(500).json({ reply: `Groq Error: ${data.error.message}` });
-    }
-
-    // Extracting the text specifically for the Groq/OpenAI format
-    const reply = data.choices?.[0]?.message?.content || "No response from Groq.";
-    res.status(200).json({ reply });
-
+    // This extracts the message correctly for Groq's format
+    res.status(200).json({ reply: data.choices[0].message.content });
   } catch (error) {
-    res.status(500).json({ reply: "Connection to Groq failed." });
+    res.status(500).json({ reply: "Backend error. Is GROQ_API_KEY set in Vercel?" });
   }
 };
