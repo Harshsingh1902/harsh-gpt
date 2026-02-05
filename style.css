@@ -11,6 +11,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
 }
 
 .app {
@@ -20,13 +21,14 @@ body {
     background-color: #171717;
     border-radius: 24px;
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Keeps header top, input bottom */
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0,0,0,0.7);
 }
 
 /* Header Styling */
 .header {
+    flex-shrink: 0; /* Prevents header from squishing */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -62,7 +64,7 @@ body {
 
 /* Chat Container */
 .chat-container {
-    flex: 1;
+    flex: 1; /* Takes up all available space between header and footer */
     padding: 20px;
     overflow-y: auto;
     display: flex;
@@ -90,8 +92,9 @@ body {
     align-self: flex-end;
 }
 
-/* Input Styling */
+/* Input Styling - Stays at the bottom */
 .input-area {
+    flex-shrink: 0; /* Prevents footer from squishing */
     padding: 20px;
     background-color: #171717;
 }
@@ -111,6 +114,7 @@ input {
     color: white;
     padding: 10px;
     outline: none;
+    font-size: 14px;
 }
 
 #sendBtn {
