@@ -5,29 +5,29 @@ module.exports = async (req, res) => {
   if (!message) return res.status(400).json({ reply: "No message provided!" });
 
   try {
-    // UPDATED: Using the exact model and version your terminal just confirmed
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + 
-      process.env.GEMINI_API_KEY,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: message }] }]
-        })
-      }
-    );
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: message }]
+      })
+    });
 
     const data = await response.json();
 
     if (data.error) {
-      return res.status(200).json({ reply: `Google Says: ${data.error.message}` });
+      return res.status(500).json({ reply: `Groq Error: ${data.error.message}` });
     }
 
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "Connected, but no reply text.";
+    // Extracting the text specifically for the Groq/OpenAI format
+    const reply = data.choices?.[0]?.message?.content || "No response from Groq.";
     res.status(200).json({ reply });
 
   } catch (error) {
-    res.status(500).json({ reply: "Connection failed. Please check Vercel Logs." });
+    res.status(500).json({ reply: "Connection to Groq failed." });
   }
 };
