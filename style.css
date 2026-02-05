@@ -1,8 +1,9 @@
+/* General Reset */
 * { 
     box-sizing: border-box; 
     margin: 0; 
     padding: 0; 
-    font-family: 'Inter', sans-serif; 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
 }
 
 body {
@@ -10,6 +11,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    /* Use dvh to ensure it fits mobile screens perfectly with browser bars */
     height: 100dvh; 
     margin: 0;
     overflow: hidden; 
@@ -23,40 +25,52 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
 }
 
+/* Header with Sidebar, Title, and Profile */
 .header {
     flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
+    background-color: #171717;
     border-bottom: 1px solid #262626;
+    z-index: 10;
 }
 
-.nav-center { text-align: center; }
-.header h1 { font-size: 18px; color: #ececec; }
-.subtitle { font-size: 11px; color: #8e8e8e; }
+.nav-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
 
+.header h1 { 
+    font-size: 16px; 
+    color: #ececec; 
+    font-weight: 600;
+}
+
+.subtitle {
+    font-size: 10px;
+    color: #8e8e8e;
+    margin-top: 1px;
+}
+
+/* Chat Messages Area */
 .chat-container {
     flex: 1;
-    padding: 15px;
+    padding: 20px 15px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    /* Smooth scrolling for mobile */
+    gap: 15px;
+    background-color: #171717;
+    /* Smooth scroll for mobile */
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-}
-
-/* Custom Scrollbar for a premium look */
-.chat-container::-webkit-scrollbar {
-    width: 4px;
-}
-.chat-container::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 10px;
 }
 
 .message {
@@ -68,14 +82,26 @@ body {
     word-wrap: break-word;
 }
 
-.message.bot { background-color: #2f2f2f; color: #ececec; align-self: flex-start; }
-.message.user { background-color: #3b82f6; color: white; align-self: flex-end; }
+.message.bot {
+    background-color: #2f2f2f;
+    color: #ececec;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
 
-/* Input Area Fixes */
+.message.user {
+    background-color: #3b82f6;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+/* --- THE FIX FOR THE SEND BUTTON --- */
 .input-area { 
-    padding: 10px 15px; 
+    padding: 12px 15px; 
     background-color: #171717;
     flex-shrink: 0;
+    border-top: 1px solid #262626;
 }
 
 .input-wrapper {
@@ -84,40 +110,32 @@ body {
     border-radius: 24px;
     padding: 5px 10px;
     align-items: center;
-    gap: 5px;
-    border: 1px solid transparent;
-    transition: border-color 0.3s;
-}
-
-.input-wrapper:focus-within {
-    border-color: #3b82f6;
+    gap: 6px; /* Space between icons, input, and send button */
+    width: 100%;
 }
 
 input { 
     flex: 1; 
+    min-width: 0; /* CRITICAL: Allows input to shrink so Send button can show */
     background: none; 
     border: none; 
     color: white; 
-    padding: 8px; 
+    padding: 8px 5px; 
     outline: none; 
-    font-size: 16px; 
+    font-size: 16px; /* 16px prevents iOS zoom on focus */
 }
 
-/* Styling for Voice and Image buttons */
 .action-btn, .icon-btn {
     background: none;
     border: none;
     color: #b4b4b4;
     font-size: 18px;
     cursor: pointer;
-    padding: 5px;
+    flex-shrink: 0; /* Icons won't disappear */
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s;
 }
-
-.action-btn:hover { color: white; }
 
 #sendBtn {
     background-color: #3b82f6;
@@ -125,13 +143,24 @@ input {
     border: none;
     border-radius: 18px;
     padding: 6px 14px;
-    font-weight: bold;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
-    flex-shrink: 0;
-    transition: transform 0.1s, background-color 0.2s;
+    flex-shrink: 0; /* Button will NEVER be pushed off screen */
+    white-space: nowrap;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
 #sendBtn:active {
     transform: scale(0.95);
     background-color: #2563eb;
+}
+
+/* Custom Scrollbar */
+.chat-container::-webkit-scrollbar {
+    width: 4px;
+}
+.chat-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 10px;
 }
