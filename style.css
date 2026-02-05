@@ -1,9 +1,4 @@
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Inter', sans-serif; 
-}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
 
 body {
     background-color: #0d0d0d;
@@ -11,7 +6,6 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    margin: 0;
 }
 
 .app {
@@ -21,50 +15,26 @@ body {
     background-color: #171717;
     border-radius: 24px;
     display: flex;
-    flex-direction: column; /* Keeps header top, input bottom */
+    flex-direction: column;
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0,0,0,0.7);
 }
 
-/* Header Styling */
 .header {
-    flex-shrink: 0; /* Prevents header from squishing */
+    flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    background-color: #171717;
     border-bottom: 1px solid #262626;
 }
 
-.nav-center {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+.nav-center { text-align: center; }
+.header h1 { font-size: 18px; color: #ececec; }
+.subtitle { font-size: 12px; color: #8e8e8e; }
 
-.header h1 { 
-    font-size: 18px; 
-    color: #ececec; 
-    margin-bottom: 2px;
-}
-
-.subtitle {
-    font-size: 12px;
-    color: #8e8e8e;
-}
-
-.icon-btn {
-    background: none;
-    border: none;
-    color: #b4b4b4;
-    font-size: 20px;
-    cursor: pointer;
-}
-
-/* Chat Container */
 .chat-container {
-    flex: 1; /* Takes up all available space between header and footer */
+    flex: 1;
     padding: 20px;
     overflow-y: auto;
     display: flex;
@@ -80,42 +50,32 @@ body {
     line-height: 1.5;
 }
 
-.message.bot {
-    background-color: #2f2f2f;
-    color: #ececec;
-    align-self: flex-start;
-}
+.message.bot { background-color: #2f2f2f; color: #ececec; align-self: flex-start; }
+.message.user { background-color: #3b82f6; color: white; align-self: flex-end; }
 
-.message.user {
-    background-color: #3b82f6;
-    color: white;
-    align-self: flex-end;
-}
-
-/* Input Styling - Stays at the bottom */
-.input-area {
-    flex-shrink: 0; /* Prevents footer from squishing */
-    padding: 20px;
-    background-color: #171717;
-}
-
+/* Input area updates */
+.input-area { padding: 20px; background-color: #171717; }
 .input-wrapper {
     display: flex;
     background-color: #2f2f2f;
     border-radius: 30px;
-    padding: 5px 15px;
+    padding: 5px 12px;
     align-items: center;
+    gap: 8px;
 }
 
-input {
-    flex: 1;
+input { flex: 1; background: none; border: none; color: white; padding: 10px; outline: none; }
+
+.action-btn {
     background: none;
     border: none;
-    color: white;
-    padding: 10px;
-    outline: none;
-    font-size: 14px;
+    color: #b4b4b4;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 5px;
 }
+
+.icon-btn { background: none; border: none; color: #b4b4b4; font-size: 20px; cursor: pointer; }
 
 #sendBtn {
     background-color: #3b82f6;
