@@ -17,9 +17,10 @@ async function handleSend() {
     addMessage(message, "user");
     userInput.value = "";
 
+    // --- NEW LOADING STATE ---
     const botDiv = document.createElement("div");
-    botDiv.classList.add("message", "bot");
-    botDiv.textContent = "Harsh GPT is thinking...";
+    botDiv.classList.add("message", "bot", "typing"); // Added 'typing' class for CSS dots
+    botDiv.innerHTML = "<span></span><span></span><span></span>"; // Creates the 3 animated dots
     chatContainer.appendChild(botDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -31,9 +32,13 @@ async function handleSend() {
         });
 
         const data = await response.json();
-        botDiv.textContent = data.reply;
+        
+        // --- REPLACE DOTS WITH TEXT ---
+        botDiv.classList.remove("typing"); // Removes the dots styling
+        botDiv.textContent = data.reply; // Sets the actual AI response
 
     } catch (error) {
+        botDiv.classList.remove("typing");
         botDiv.textContent = "Error connecting to Harsh GPT";
     }
 }
