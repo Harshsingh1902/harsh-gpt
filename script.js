@@ -1,17 +1,11 @@
-// 1. DECLARE ONCE AND ONLY ONCE
-const SUPABASE_URL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
+// USING A UNIQUE NAME: _sb
+const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
+const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 
-// Check if window.supabase exists from the CDN, then create the client
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// Global Client
+const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
-if (supabase) {
-    console.log("Supabase initialized successfully!");
-} else {
-    console.error("Supabase library not found. Check your HTML script tags.");
-}
-
-// 2. DOM ELEMENTS
+// DOM Elements
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const chatContainer = document.getElementById("chatContainer");
@@ -19,99 +13,89 @@ const voiceBtn = document.getElementById("voiceBtn");
 const loginBtn = document.getElementById("loginBtn");
 const accountBtn = document.getElementById("accountBtn");
 
-// 3. VOICE LOGIC (MIC 🎤)
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-recognition.lang = 'en-US';
-
+// 1. MIC LOGIC (Simplified)
 if (voiceBtn) {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     voiceBtn.onclick = () => {
-        try {
-            recognition.start();
-            voiceBtn.textContent = "🛑";
-        } catch (e) {
-            recognition.stop();
-            voiceBtn.textContent = "🎤";
-        }
+        recognition.start();
+        voiceBtn.textContent = "🛑";
     };
+    recognition.onresult = (e) => {
+        userInput.value = e.results[0][0].transcript;
+        voiceBtn.textContent = "🎤";
+        handleSend();
+    };
+    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
 }
 
-recognition.onresult = (event) => {
-    userInput.value = event.results[0][0].transcript;
-    voiceBtn.textContent = "🎤";
-    handleSend(); 
-};
-
-recognition.onend = () => { voiceBtn.textContent = "🎤"; };
-
-// 4. AUTH LOGIC
-if (loginBtn && supabase) {
+// 2. AUTH LOGIC
+if (loginBtn && _sbClient) {
     loginBtn.onclick = async () => {
-        await supabase.auth.signInWithOAuth({
+        await _sbClient.auth.signInWithOAuth({
             provider: 'google',
             options: { redirectTo: window.location.origin }
         });
     };
 }
 
-if (accountBtn && supabase) {
+if (accountBtn && _sbClient) {
     accountBtn.onclick = async () => {
-        await supabase.auth.signOut();
+        await _sbClient.auth.signOut();
         window.location.reload();
     };
 }
 
-if (supabase) {
-    supabase.auth.onAuthStateChange((event, session) => {
+// Update UI
+if (_sbClient) {
+    _sbClient.auth.onAuthStateChange((event, session) => {
         if (session) {
-            if (loginBtn) loginBtn.style.display = 'none';
-            if (accountBtn) accountBtn.style.display = 'block';
+            loginBtn.style.display = 'none';
+            accountBtn.style.display = 'block';
         } else {
-            if (loginBtn) loginBtn.style.display = 'block';
-            if (accountBtn) accountBtn.style.display = 'none';
+            loginBtn.style.display = 'block';
+            accountBtn.style.display = 'none';
         }
     });
 }
 
-// 5. CHAT LOGIC
+// 3. CHAT LOGIC
 async function handleSend() {
     const message = userInput.value.trim();
     if (!message) return;
 
     // Add User Message
-    const userDiv = document.createElement("div");
-    userDiv.className = "message user";
-    userDiv.textContent = message;
-    chatContainer.appendChild(userDiv);
+    const uDiv = document.createElement("div");
+    uDiv.className = "message user";
+    uDiv.textContent = message;
+    chatContainer.appendChild(uDiv);
     userInput.value = "";
 
-    // Add Bot Thinking
-    const botDiv = document.createElement("div");
-    botDiv.className = "message bot";
-    botDiv.textContent = "Harsh GPT is thinking...";
-    chatContainer.appendChild(botDiv);
+    // Add Bot Placeholder
+    const bDiv = document.createElement("div");
+    bDiv.className = "message bot";
+    bDiv.textContent = "Harsh GPT is thinking...";
+    chatContainer.appendChild(bDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
-        let userId = "guest";
-        if (supabase) {
-            const { data } = await supabase.auth.getUser();
-            if (data?.user) userId = data.user.id;
+        let uId = "guest";
+        if (_sbClient) {
+            const { data } = await _sbClient.auth.getUser();
+            if (data?.user) uId = data.user.id;
         }
 
-        const response = await fetch("/api/chat", {
+        const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message, userId })
+            body: JSON.stringify({ message, userId: uId })
         });
-        const data = await response.json();
-        botDiv.textContent = data.reply;
-    } catch (error) {
-        botDiv.textContent = "Error: Check backend.";
+        const data = await res.json();
+        bDiv.textContent = data.reply;
+    } catch (err) {
+        bDiv.textContent = "Error: Check Vercel.";
     }
 }
 
-// Attach Event Listeners
+// Listeners
 if (sendBtn) sendBtn.onclick = handleSend;
-if (userInput) {
-    userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
-}
+if (userInput) userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
