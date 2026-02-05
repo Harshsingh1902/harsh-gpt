@@ -3,12 +3,11 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-/* ---------- BODY ---------- */
 body {
-    background-color: #121212; /* dark mode */
+    background: radial-gradient(circle at top left, #1a1a2e, #16213e); /* Rich dark gradient */
     color: #ffffff;
     display: flex;
     justify-content: center;
@@ -16,116 +15,77 @@ body {
     height: 100vh;
 }
 
-/* ---------- MAIN APP CONTAINER ---------- */
+/* ---------- MAIN APP (Glassmorphism) ---------- */
 .app {
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: 95%;
     max-width: 450px;
-    height: 90vh;
-    background-color: #1e1e1e;
-    border-radius: 15px;
+    height: 85vh;
+    background: rgba(255, 255, 255, 0.05); /* Semi-transparent */
+    backdrop-filter: blur(15px);           /* Frosted glass blur */
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
 /* ---------- HEADER ---------- */
 .header {
-    padding: 20px;
+    padding: 25px;
     text-align: center;
-    background-color: #272727;
-    border-bottom: 1px solid #333;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header h1 {
-    font-size: 24px;
-    margin-bottom: 5px;
+    font-size: 22px;
+    letter-spacing: 1px;
+    background: linear-gradient(to right, #4facfe, #00f2fe);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.header p {
-    font-size: 14px;
-    color: #aaa;
+/* ---------- MESSAGES & ANIMATIONS ---------- */
+@keyframes messageEntrance {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- CHAT CONTAINER ---------- */
-.chat-container {
-    flex: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #555 #1e1e1e;
-}
-
-/* Scrollbar for Chrome/Safari */
-.chat-container::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-container::-webkit-scrollbar-thumb {
-    background-color: #555;
-    border-radius: 3px;
-}
-
-.chat-container::-webkit-scrollbar-track {
-    background-color: #1e1e1e;
-}
-
-/* ---------- MESSAGES ---------- */
 .message {
-    max-width: 80%;
-    padding: 10px 15px;
-    border-radius: 15px;
-    line-height: 1.4;
-    word-wrap: break-word;
+    max-width: 85%;
+    padding: 12px 18px;
+    border-radius: 20px;
+    font-size: 15px;
+    line-height: 1.5;
+    animation: messageEntrance 0.3s ease forwards;
 }
 
-/* Bot messages */
 .message.bot {
-    background-color: #333;
+    background: rgba(255, 255, 255, 0.1);
     align-self: flex-start;
+    border-bottom-left-radius: 4px;
 }
 
-/* User messages */
 .message.user {
-    background-color: #4a90e2;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Modern Purple/Blue gradient */
     align-self: flex-end;
-    color: #fff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-/* ---------- INPUT AREA ---------- */
-.input-area {
-    display: flex;
-    padding: 10px 15px;
-    background-color: #272727;
-    border-top: 1px solid #333;
+/* ---------- TYPING DOTS ---------- */
+.typing span {
+    width: 6px;
+    height: 6px;
+    background: #aaa;
+    display: inline-block;
+    border-radius: 50%;
+    margin-right: 4px;
+    animation: typingBlink 1.4s infinite;
 }
 
-.input-area input {
-    flex: 1;
-    padding: 10px 15px;
-    border-radius: 20px;
-    border: none;
-    outline: none;
-    background-color: #1e1e1e;
-    color: #fff;
-    font-size: 14px;
-}
-
-.input-area button {
-    margin-left: 10px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 20px;
-    background-color: #4a90e2;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.input-area button:hover {
-    background-color: #357ab7;
+@keyframes typingBlink {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
 }
