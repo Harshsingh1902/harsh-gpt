@@ -3,61 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>Harsh GPT</title>
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="app">
         <header class="header">
-            <div class="header-content">
+            <div class="nav-left">
+                <button class="icon-btn" id="menuBtn">☰</button> 
+            </div>
+            <div class="nav-center">
                 <h1>Harsh GPT</h1>
+            </div>
+            <div class="nav-right">
+                <button class="icon-btn" id="accountBtn">👤</button> 
             </div>
         </header>
 
         <main class="chat-container" id="chatContainer">
-            
-            <div class="default-view" id="defaultView">
-                <div class="welcome-section">
-                    <h2>What can I help with?</h2>
-                </div>
-                
-                <div class="suggestion-grid">
-                    <div class="card" onclick="fillInput('Write a poem about coding')">
-                        <p>Write a poem</p>
-                        <span>about coding in 2026</span>
-                    </div>
-                    <div class="card" onclick="fillInput('How do I build a website?')">
-                        <p>Help me code</p>
-                        <span>a modern AI interface</span>
-                    </div>
-                    <div class="card" onclick="fillInput('Tell me a fun fact')">
-                        <p>Fun fact</p>
-                        <span>about the universe</span>
-                    </div>
-                </div>
+            <div class="message bot">
+                Hello 👋 I’m Harsh GPT. How can I help you today?
             </div>
-
-            </main>
+        </main>
 
         <footer class="input-area">
             <div class="input-wrapper">
                 <input 
                     type="text" 
                     id="userInput" 
-                    placeholder="Message Harsh GPT..." 
+                    placeholder="Ask something..." 
                     autocomplete="off"
                 >
-                <button id="sendBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
-                </button>
+                <button id="sendBtn">Send</button>
             </div>
-            <p class="footer-note">Harsh GPT can make mistakes. Check important info.</p>
         </footer>
-
     </div>
 
     <script src="script.js"></script>
+
 </body>
 </html>
