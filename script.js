@@ -109,43 +109,51 @@ function viewPastChat(uMsg, bRes) {
     document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
-// 4. MIC LOGIC
+// 4. MIC LOGIC (With Style Fix)
 if (voiceBtn) {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    
     voiceBtn.onclick = () => {
+        voiceBtn.style.background = "transparent"; // Ensure no white background
         recognition.start();
         voiceBtn.textContent = "🛑";
     };
+    
     recognition.onresult = (e) => {
         userInput.value = e.results[0][0].transcript;
         voiceBtn.textContent = "🎤";
         handleSend();
     };
-    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
+    
+    recognition.onend = () => { 
+        voiceBtn.textContent = "🎤"; 
+    };
 }
 
-// 5. CHAT LOGIC
+// 5. INTEGRATED CHAT LOGIC (Thinking Fix)
 async function handleSend() {
     const message = userInput.value.trim();
     if (!message) return;
 
+    // User Message
     const uDiv = document.createElement("div");
     uDiv.className = "message user";
     uDiv.textContent = message;
     chatContainer.appendChild(uDiv);
     userInput.value = "";
 
+    // Bot Message - Initial State (Full text fix)
     const bDiv = document.createElement("div");
     bDiv.className = "message bot";
-    bDiv.textContent = "Thinking...";
+    bDiv.textContent = "Harsh GPT is thinking..."; 
     chatContainer.appendChild(bDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     try {
         let uId = "guest";
         if (_sbClient) {
-            const { data } = await _sbClient.auth.getUser();
-            if (data?.user) uId = data.user.id;
+            const { data: { user } } = await _sbClient.auth.getUser();
+            if (user) uId = user.id;
         }
 
         const res = await fetch("/api/chat", {
@@ -153,13 +161,16 @@ async function handleSend() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message, userId: uId })
         });
+        
         const data = await res.json();
-        bDiv.textContent = data.reply;
+        
+        // Final Response replacement
+        bDiv.textContent = data.reply; 
         
         if (uId !== "guest") loadHistory(uId);
         
     } catch (err) {
-        bDiv.textContent = "Error: Connection failed.";
+        bDiv.textContent = "Harsh GPT: Error - Check connection.";
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
