@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Harsh GPT</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="font-default">
 
-    <div id="sidebar" class="sidebar-closed">
+    <div id="sidebar">
         <div class="sidebar-header">
             <button class="home-menu-btn" onclick="goHome()">🏠 Home</button>
             <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
@@ -26,7 +26,6 @@
 
         <div class="sidebar-footer">
             <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
-            <button class="footer-btn logout-btn" id="logoutBtn" style="display:none" onclick="handleLogout()">🚪 Logout</button>
         </div>
     </div>
 
@@ -73,7 +72,7 @@
             </div>
             <div class="nav-right">
                 <button id="loginBtn" class="auth-btn">Login</button>
-                <button id="accountBtn" class="icon-btn" style="display:none" onclick="toggleSidebar()">👤</button>
+                <button id="accountBtn" class="icon-btn" style="display:none" onclick="handleLogout()">👤</button>
             </div>
         </header>
 

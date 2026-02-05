@@ -13,15 +13,16 @@ const accountBtn = document.getElementById("accountBtn");
 const menuBtn = document.getElementById("menuBtn");
 const historyList = document.getElementById("chat-history-list");
 
-// 2. PREMIUM UI LOGIC (Sidebar, Themes, Fonts)
+// 2. PREMIUM UI LOGIC
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) sidebar.classList.toggle('sidebar-open');
+    document.getElementById('sidebar').classList.toggle('sidebar-open');
 }
 
 function openSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
-    if (window.innerWidth < 480) toggleSidebar(); 
+    if (window.innerWidth < 480) {
+        document.getElementById('sidebar').classList.remove('sidebar-open');
+    }
 }
 
 function closeSettings() {
@@ -38,18 +39,17 @@ function setFont(fontClass) {
     localStorage.setItem('harsh-gpt-font', fontClass);
 }
 
-// HOME FUNCTION: Resets to welcome screen
 function goHome() {
     chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
-    toggleSidebar();
+    document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
 function startNewChat() {
     chatContainer.innerHTML = '<div class="message bot">New chat started! How can I help?</div>';
-    toggleSidebar();
+    document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
-// 3. AUTH & HISTORY INTEGRATION
+// 3. AUTH & HISTORY
 if (_sbClient) {
     loginBtn.onclick = async () => {
         await _sbClient.auth.signInWithOAuth({
@@ -58,9 +58,13 @@ if (_sbClient) {
         });
     };
 
+    // LOGOUT LOGIC (Called by 👤 icon)
     window.handleLogout = async () => {
-        await _sbClient.auth.signOut();
-        window.location.reload();
+        const confirmLogout = confirm("Do you want to logout?");
+        if (confirmLogout) {
+            await _sbClient.auth.signOut();
+            window.location.reload();
+        }
     };
 
     _sbClient.auth.onAuthStateChange(async (event, session) => {
@@ -77,7 +81,6 @@ if (_sbClient) {
     });
 }
 
-// FETCH HISTORY: Updated to make items clickable
 async function loadHistory(uId) {
     if (!historyList || !_sbClient) return;
     const { data } = await _sbClient
@@ -88,29 +91,22 @@ async function loadHistory(uId) {
         .limit(10);
 
     if (data && data.length > 0) {
-        historyList.innerHTML = data.map(chat => {
-            // Clean strings for JS injection
-            const cleanUser = chat.user_message.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const cleanBot = chat.bot_response ? chat.bot_response.replace(/'/g, "&apos;").replace(/"/g, "&quot;") : "No response";
-            
-            return `
-                <div class="history-item" onclick="viewPastChat('${cleanUser}', '${cleanBot}')">
-                    💬 ${chat.user_message.substring(0, 25)}...
-                </div>
-            `;
-        }).join('');
+        historyList.innerHTML = data.map(chat => `
+            <div class="history-item" onclick="viewPastChat(\`${chat.user_message.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${chat.bot_response ? chat.bot_response.replace(/`/g, '\\`').replace(/\$/g, '\\$') : '...'}\`)">
+                💬 ${chat.user_message.substring(0, 25)}...
+            </div>
+        `).join('');
     } else {
-        historyList.innerHTML = '<p class="empty-history" style="padding:10px; color:#888;">No history yet</p>';
+        historyList.innerHTML = '<p class="empty-history">No history yet</p>';
     }
 }
 
-// VIEW PAST CHAT: Displays specific history item
 function viewPastChat(uMsg, bRes) {
     chatContainer.innerHTML = `
         <div class="message user">${uMsg}</div>
         <div class="message bot">${bRes}</div>
     `;
-    toggleSidebar();
+    document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
 // 4. MIC LOGIC
@@ -133,17 +129,15 @@ async function handleSend() {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // Add User Message
     const uDiv = document.createElement("div");
     uDiv.className = "message user";
     uDiv.textContent = message;
     chatContainer.appendChild(uDiv);
     userInput.value = "";
 
-    // Add Bot Placeholder
     const bDiv = document.createElement("div");
     bDiv.className = "message bot";
-    bDiv.textContent = "Harsh GPT is thinking...";
+    bDiv.textContent = "Thinking...";
     chatContainer.appendChild(bDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -159,20 +153,18 @@ async function handleSend() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message, userId: uId })
         });
-        
         const data = await res.json();
         bDiv.textContent = data.reply;
         
         if (uId !== "guest") loadHistory(uId);
         
     } catch (err) {
-        bDiv.textContent = "Error: Check Vercel Logs.";
-        console.error(err);
+        bDiv.textContent = "Error: Connection failed.";
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// 6. INITIALIZATION & LISTENERS
+// 6. INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
     const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
