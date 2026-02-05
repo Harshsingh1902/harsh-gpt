@@ -1,20 +1,21 @@
 const { createClient } = require('@supabase/supabase-js');
 
+// This line is CRUCIAL: It fixes the "fetch is not defined" error in Vercel's Node environment
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 // 1. Initialize Supabase
-// These must be set in your Vercel Environment Variables
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 module.exports = async (req, res) => {
-  // Extract user message and identity from the frontend
   const { message, userId } = req.body;
 
   try {
     let memoryContext = "";
 
-    // 2. FETCH MEMORY: Look up the last 4 exchanges for this user
+    // 2. FETCH MEMORY
     if (userId && userId !== "guest") {
       const { data: history, error: fetchError } = await supabase
         .from('chats')
@@ -24,14 +25,13 @@ module.exports = async (req, res) => {
         .limit(4);
 
       if (!fetchError && history && history.length > 0) {
-        // We reverse them so they are in chronological order (oldest to newest)
         memoryContext = history.reverse()
           .map(h => `User: ${h.user_message}\nAssistant: ${h.bot_response}`)
           .join('\n');
       }
     }
 
-    // 3. GROQ AI CALL: Provide history context so it "remembers"
+    // 3. GROQ AI CALL
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
         messages: [
           { 
             role: "system", 
-            content: `You are Harsh GPT, a helpful AI. Here is the context of the recent conversation to help you remember the user:\n${memoryContext}` 
+            content: `You are Harsh GPT, a helpful AI. Context:\n${memoryContext}` 
           },
           { role: "user", content: message }
         ]
@@ -52,14 +52,13 @@ module.exports = async (req, res) => {
 
     const data = await response.json();
     
-    // Check for Groq API errors
     if (!data.choices || !data.choices[0]) {
-        throw new Error("Invalid response from Groq API");
+        throw new Error("Invalid response from Groq API: " + JSON.stringify(data));
     }
 
     const botReply = data.choices[0].message.content;
 
-    // 4. SAVE TO DATABASE: Store this new exchange for next time
+    // 4. SAVE TO DATABASE
     if (userId && userId !== "guest") {
       await supabase.from('chats').insert([
         { 
@@ -70,11 +69,10 @@ module.exports = async (req, res) => {
       ]);
     }
 
-    // Send the reply back to your frontend
     res.status(200).json({ reply: botReply });
 
   } catch (error) {
     console.error("Backend Error:", error);
-    res.status(500).json({ reply: "I'm having trouble accessing my memory. Is the database set up?" });
+    res.status(500).json({ reply: "Error: " + error.message });
   }
 };

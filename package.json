@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@supabase/supabase-js": "latest",
+    "node-fetch": "2"
+  }
+}
