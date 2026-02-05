@@ -15,12 +15,13 @@ const historyList = document.getElementById("chat-history-list");
 
 // 2. PREMIUM UI LOGIC (Sidebar, Themes, Fonts)
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('sidebar-open');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.toggle('sidebar-open');
 }
 
 function openSettings() {
     document.getElementById('settings-modal').classList.remove('hidden');
-    if (window.innerWidth < 480) toggleSidebar(); // Close sidebar on mobile
+    if (window.innerWidth < 480) toggleSidebar(); 
 }
 
 function closeSettings() {
@@ -37,6 +38,12 @@ function setFont(fontClass) {
     localStorage.setItem('harsh-gpt-font', fontClass);
 }
 
+// HOME FUNCTION: Resets to welcome screen
+function goHome() {
+    chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
+    toggleSidebar();
+}
+
 function startNewChat() {
     chatContainer.innerHTML = '<div class="message bot">New chat started! How can I help?</div>';
     toggleSidebar();
@@ -44,7 +51,6 @@ function startNewChat() {
 
 // 3. AUTH & HISTORY INTEGRATION
 if (_sbClient) {
-    // Google Login
     loginBtn.onclick = async () => {
         await _sbClient.auth.signInWithOAuth({
             provider: 'google',
@@ -52,13 +58,11 @@ if (_sbClient) {
         });
     };
 
-    // Logout Function
     window.handleLogout = async () => {
         await _sbClient.auth.signOut();
         window.location.reload();
     };
 
-    // Update UI & Load History on Auth Change
     _sbClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
             loginBtn.style.display = 'none';
@@ -73,23 +77,40 @@ if (_sbClient) {
     });
 }
 
-// Fetch history from Supabase for the sidebar
+// FETCH HISTORY: Updated to make items clickable
 async function loadHistory(uId) {
-    if (!historyList) return;
+    if (!historyList || !_sbClient) return;
     const { data } = await _sbClient
         .from('chats')
-        .select('user_message')
+        .select('user_message, bot_response')
         .eq('user_id', uId)
         .order('created_at', { ascending: false })
         .limit(10);
 
     if (data && data.length > 0) {
-        historyList.innerHTML = data.map(chat => `
-            <div class="history-item" onclick="toggleSidebar()">
-                💬 ${chat.user_message.substring(0, 20)}...
-            </div>
-        `).join('');
+        historyList.innerHTML = data.map(chat => {
+            // Clean strings for JS injection
+            const cleanUser = chat.user_message.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+            const cleanBot = chat.bot_response ? chat.bot_response.replace(/'/g, "&apos;").replace(/"/g, "&quot;") : "No response";
+            
+            return `
+                <div class="history-item" onclick="viewPastChat('${cleanUser}', '${cleanBot}')">
+                    💬 ${chat.user_message.substring(0, 25)}...
+                </div>
+            `;
+        }).join('');
+    } else {
+        historyList.innerHTML = '<p class="empty-history" style="padding:10px; color:#888;">No history yet</p>';
     }
+}
+
+// VIEW PAST CHAT: Displays specific history item
+function viewPastChat(uMsg, bRes) {
+    chatContainer.innerHTML = `
+        <div class="message user">${uMsg}</div>
+        <div class="message bot">${bRes}</div>
+    `;
+    toggleSidebar();
 }
 
 // 4. MIC LOGIC
@@ -107,7 +128,7 @@ if (voiceBtn) {
     recognition.onend = () => { voiceBtn.textContent = "🎤"; };
 }
 
-// 5. CHAT LOGIC (API CALL)
+// 5. CHAT LOGIC
 async function handleSend() {
     const message = userInput.value.trim();
     if (!message) return;
@@ -138,21 +159,21 @@ async function handleSend() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message, userId: uId })
         });
+        
         const data = await res.json();
         bDiv.textContent = data.reply;
         
-        // Refresh sidebar history after sending
         if (uId !== "guest") loadHistory(uId);
         
     } catch (err) {
         bDiv.textContent = "Error: Check Vercel Logs.";
+        console.error(err);
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
 // 6. INITIALIZATION & LISTENERS
 window.addEventListener('DOMContentLoaded', () => {
-    // Load saved preferences
     const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
     const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
     setTheme(savedTheme);

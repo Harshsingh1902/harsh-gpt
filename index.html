@@ -8,8 +8,11 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="font-default"> <div id="sidebar" class="sidebar-closed">
+<body class="font-default">
+
+    <div id="sidebar" class="sidebar-closed">
         <div class="sidebar-header">
+            <button class="home-menu-btn" onclick="goHome()">🏠 Home</button>
             <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
             <button class="close-sidebar" onclick="toggleSidebar()">✕</button>
         </div>
@@ -54,7 +57,7 @@
 
             <div class="setting-group footer-links">
                 <p>Safety & Privacy Policy</p>
-                <a href="mailto:your-email@gmail.com?subject=HarshGPT Help">Help: Contact Developer</a>
+                <a href="mailto:harsh@example.com?subject=HarshGPT Help">Help: Contact Developer</a>
             </div>
         </div>
     </div>
@@ -82,9 +85,7 @@
             <div class="input-wrapper">
                 <label for="imageInput" class="action-btn">➕</label>
                 <input type="file" id="imageInput" accept="image/*" style="display:none">
-                
                 <input type="text" id="userInput" placeholder="Ask something..." autocomplete="off">
-                
                 <button id="voiceBtn" class="action-btn">🎤</button>
                 <button id="sendBtn">Send</button>
             </div>
