@@ -1,8 +1,10 @@
 // 1. INITIALIZE SUPABASE
-// Replace these with your actual keys from Supabase Dashboard > Settings > API
-const SUPABASE_URL = 'https://your-project-url.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Note: If using the <script> tag CDN, 'supabase' is globally available on 'window'
+const SUPABASE_URL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
+
+// Check if we are in a browser environment with the CDN loaded
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. DOM ELEMENTS
 const sendBtn = document.getElementById("sendBtn");
@@ -14,10 +16,13 @@ const loginBtn = document.getElementById("loginBtn");
 const accountBtn = document.getElementById("accountBtn");
 
 // 3. AUTHENTICATION LOGIC
-// Handle Login
+// Handle Login (Defaulting to Google, change to 'github' if preferred)
 loginBtn.onclick = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google', // Or 'github'
+        provider: 'google', 
+        options: {
+            redirectTo: window.location.origin // Sends user back to your site after login
+        }
     });
     if (error) console.error("Login error:", error.message);
 };
@@ -25,7 +30,11 @@ loginBtn.onclick = async () => {
 // Handle Logout
 accountBtn.onclick = async () => {
     const { error } = await supabase.auth.signOut();
-    if (error) console.error("Logout error:", error.message);
+    if (error) {
+        console.error("Logout error:", error.message);
+    } else {
+        location.reload(); // Refresh to clear UI state
+    }
 };
 
 // Listen for Auth Changes (Login/Logout)
@@ -34,6 +43,7 @@ supabase.auth.onAuthStateChange((event, session) => {
         // User is logged in
         loginBtn.style.display = 'none';
         accountBtn.style.display = 'block';
+        accountBtn.textContent = `Logout (${session.user.email.split('@')[0]})`;
         console.log("Logged in as:", session.user.email);
     } else {
         // User is logged out
@@ -57,6 +67,7 @@ function addMessage(content, sender, isHTML = false) {
 }
 
 async function handleSend() {
+    // Check for user session
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -81,7 +92,7 @@ async function handleSend() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 message, 
-                userId: user.id // Send unique ID to your backend
+                userId: user.id 
             })
         });
         const data = await response.json();
