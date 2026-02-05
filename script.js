@@ -39,8 +39,15 @@ function setFont(fontClass) {
     localStorage.setItem('harsh-gpt-font', fontClass);
 }
 
+// INTEGRATED: Login-aware Home Logic
 function goHome() {
-    chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
+    _sbClient.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
+        } else {
+            chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
+        }
+    });
     document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
@@ -58,7 +65,6 @@ if (_sbClient) {
         });
     };
 
-    // LOGOUT LOGIC (Called by 👤 icon)
     window.handleLogout = async () => {
         const confirmLogout = confirm("Do you want to logout?");
         if (confirmLogout) {
@@ -67,14 +73,13 @@ if (_sbClient) {
         }
     };
 
-    // INTEGRATED AUTH CHANGE LOGIC
     _sbClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
             
-            // NEW: DYNAMIC WELCOME MESSAGE AFTER LOGIN
+            // Update message immediately on state change
             chatContainer.innerHTML = `<div class="message bot">Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
             
             loadHistory(session.user.id);
@@ -83,7 +88,6 @@ if (_sbClient) {
             accountBtn.style.display = 'none';
             if (menuBtn) menuBtn.style.display = 'none';
             
-            // NEW: RESET MESSAGE ON LOGOUT
             chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
         }
     });
@@ -117,7 +121,7 @@ function viewPastChat(uMsg, bRes) {
     document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
-// 4. MIC LOGIC (With Style Fix)
+// 4. MIC LOGIC
 if (voiceBtn) {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     
@@ -138,19 +142,17 @@ if (voiceBtn) {
     };
 }
 
-// 5. INTEGRATED CHAT LOGIC (Thinking Fix)
+// 5. CHAT LOGIC
 async function handleSend() {
     const message = userInput.value.trim();
     if (!message) return;
 
-    // User Message
     const uDiv = document.createElement("div");
     uDiv.className = "message user";
     uDiv.textContent = message;
     chatContainer.appendChild(uDiv);
     userInput.value = "";
 
-    // Bot Message - Initial State (Full text fix)
     const bDiv = document.createElement("div");
     bDiv.className = "message bot";
     bDiv.textContent = "Harsh GPT is thinking..."; 
@@ -171,8 +173,6 @@ async function handleSend() {
         });
         
         const data = await res.json();
-        
-        // Final Response replacement
         bDiv.textContent = data.reply; 
         
         if (uId !== "guest") loadHistory(uId);
@@ -183,12 +183,20 @@ async function handleSend() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// 6. INITIALIZATION
-window.addEventListener('DOMContentLoaded', () => {
+// 6. INTEGRATED INITIALIZATION
+window.addEventListener('DOMContentLoaded', async () => {
     const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
     const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
     setTheme(savedTheme);
     setFont(savedFont);
+
+    // Ensure correct welcome message on initial load
+    if (_sbClient) {
+        const { data: { user } } = await _sbClient.auth.getUser();
+        if (user) {
+            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
+        }
+    }
 });
 
 if (sendBtn) sendBtn.onclick = handleSend;
