@@ -3,26 +3,44 @@ const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
-// --- 2. UTILITY FUNCTIONS (Add Copy logic here) ---
-function copyToClipboard(text, btn) {
+
+// --- 2. GLOBAL UTILITIES (Make sure these are at the TOP) ---
+window.copyToClipboard = function(text, btn) {
     navigator.clipboard.writeText(text).then(() => {
-        const originalText = btn.innerHTML;
-        btn.innerHTML = "Done! ✅";
-        btn.style.color = "#00ff88"; // Optional: turn it green
-        setTimeout(() => { 
-            btn.innerHTML = originalText; 
-            btn.style.color = ""; // Reset color
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy: ', err);
-    });
-}
- appendMessage(role, text) 
- {
-    const chatContainer = document.getElementById('chatContainer');
+        const original = btn.innerHTML;
+        btn.innerHTML = "✅";
+        setTimeout(() => { btn.innerHTML = original; }, 2000);
+    }).catch(err => console.error("Copy failed", err));
+};
+
+// --- 3. THE MESSAGE FUNCTION ---
+// We define this BEFORE we try to call it on line 20
+function appendMessage(role, text) {
+    const chatContainer = document.getElementById('chatContainer') || document.getElementById('chat-container');
+    if (!chatContainer) return;
+
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
- }
+
+    const textSpan = document.createElement('span');
+    textSpan.innerText = text;
+    msgDiv.appendChild(textSpan);
+
+    if (role === 'bot') {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.innerHTML = '📋';
+        copyBtn.onclick = () => window.copyToClipboard(text, copyBtn);
+        msgDiv.appendChild(copyBtn);
+    }
+
+    chatContainer.appendChild(msgDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// --- 4. YOUR INITIALIZATION LOGIC (Line 20 starts around here) ---
+// Now when line 20 calls appendMessage, it will actually exist!
+
     // Create a container for the text
     const textSpan = document.createElement('span');
     textSpan.innerText = text;
