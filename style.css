@@ -501,61 +501,58 @@ input {
     padding: 5px;
 }
 
-/* 1. Ensure the parent doesn't allow children to grow too wide */
+/* 1. The Container: The foundation */
 #chatContainer {
-    display: flex;
-    flex-direction: column;
-    width: 100%; 
-    max-width: 100vw; /* Keep it within the screen width */
-    overflow-x: hidden; /* Stop horizontal scrolling */
+    display: block !important; /* Changed from flex to block */
+    width: 100%;
+    height: 100%;
     overflow-y: auto;
-    padding: 15px;
-    gap: 15px;
-    box-sizing: border-box; /* Includes padding in width calculation */
-}
-
-/* 2. The Bubble: Strict boundaries */
-.message {
-    position: relative;
-    display: block !important;
-    max-width: 80% !important; /* Forces bubble to stop at 80% of screen */
-    width: auto;
-    min-width: 50px;
-    padding: 12px 16px;
-    border-radius: 15px;
-    
-    /* THE TRIPLE WRAP DEFENSE */
-    word-wrap: break-word !important;
-    overflow-wrap: anywhere !important;
-    white-space: pre-wrap !important;
-    word-break: break-word !important;
-    
-    line-height: 1.5;
+    overflow-x: hidden;
+    padding: 20px;
     box-sizing: border-box;
 }
 
-/* 3. Alignment Logic */
-.message.user {
-    align-self: flex-end;
-    margin-left: 20%; /* Forces a gap on the left */
-    background-color: #007bff;
-    color: white;
+/* 2. The Bubble: Forced boundaries */
+.message {
+    clear: both;            /* Forces the next message to start BELOW the last one */
+    position: relative;
+    display: block !important; 
+    max-width: 75% !important; /* Limits width strictly */
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 15px;
+    
+    /* Text Wrapping: The Nuclear Option */
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: pre-wrap !important;
+    line-height: 1.5;
 }
 
+/* 3. User: Pushed Right */
+.message.user {
+    float: right;           /* Old school but 100% reliable for right alignment */
+    background-color: #007bff;
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+
+/* 4. Bot: Pushed Left */
 .message.bot {
-    align-self: flex-start;
-    margin-right: 20%; /* Forces a gap on the right */
+    float: left;            /* Old school but 100% reliable for left alignment */
     background-color: #333;
     color: #efefef;
+    border-bottom-left-radius: 2px;
     padding-right: 45px !important;
 }
-/* 5. Image Fix: Ensures images don't break the bubble */
+
+/* 5. Image Fix: Stops the image from breaking the box */
 .chat-img-preview {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
+    max-width: 100% !important;
+    height: auto !important;
     display: block;
-    margin-bottom: 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
 }
 
 .copy-btn {
