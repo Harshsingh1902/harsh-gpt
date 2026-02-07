@@ -5,8 +5,8 @@ const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY)
 
 
 // --- 2. GLOBAL UTILITIES (Make sure these are at the TOP) ---
-window.copyToClipboard = function(text, btn) {
-    navigator.clipboard.writeText(text).then(() => {
+window.copyToClipboard = function(content, btn) {
+    navigator.clipboard.writeText(content).then(() => {
         const original = btn.innerHTML;
         btn.innerHTML = "✅";
         setTimeout(() => { btn.innerHTML = original; }, 2000);
@@ -46,17 +46,21 @@ function appendMessage(role, text) {
     textSpan.innerText = text;
     msgDiv.appendChild(textSpan);
 
-    // ONLY add the copy button if it's the BOT responding
+
     if (role === 'bot') {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.innerHTML = '📋';
-        copyBtn.title = "Copy message";
         
-        // Use a standard function to ensure 'text' is captured correctly
+        // 1. We store the message text directly ON the button 
+        // This makes it impossible for the code to "forget" what to copy
+        copyBtn.dataset.copyValue = text;
+
+        // 2. Use a standard function to prevent the ReferenceError
         copyBtn.onclick = function() {
-            // Use window. to make sure it finds the global function we made
-            window.copyToClipboard(text, copyBtn);
+            // We pull the text back off the button we just clicked
+            const textToCopy = this.dataset.copyValue;
+            window.copyToClipboard(textToCopy, this);
         };
         
         msgDiv.appendChild(copyBtn);
