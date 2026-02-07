@@ -160,36 +160,162 @@ window.setFont = (fontClass) => { document.body.className = fontClass; localStor
 
 // --- 7. AUTH & HISTORY ---
 if (_sbClient) {
-    loginBtn.onclick = async () => { await _sbClient.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } }); };
-    window.handleLogout = async () => { if (confirm("Do you want to logout?")) { await _sbClient.auth.signOut(); window.location.reload(); } };
+    // Logic for Google Login
+    loginBtn.onclick = async () => { 
+        await _sbClient.auth.signInWithOAuth({ 
+            provider: 'google', 
+            options: { redirectTo: window.location.origin } 
+        }); 
+    };
+
+    // Logic for Logout with confirmation
+    window.handleLogout = async () => { 
+        if (confirm("Do you want to logout?")) { 
+            await _sbClient.auth.signOut(); 
+            window.location.reload(); 
+        } 
+    };
+
+    // Monitor Auth State Changes
     _sbClient.auth.onAuthStateChange(async (event, session) => {
         if (session) {
+            // User is logged in
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
+            
+            // FIX: Clear the "Please login" greeting before showing user content
+            chatContainer.innerHTML = ''; 
+            
+            appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
             loadHistory(session.user.id);
+        } else {
+            // User is logged out
+            loginBtn.style.display = 'block';
+            accountBtn.style.display = 'none';
+            if (menuBtn) menuBtn.style.display = 'none';
+            
+            // Show the default guest greeting
+            chatContainer.innerHTML = '';
+            appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
         }
     });
 }
 
+// Function to fetch and display the last 10 chat items
 async function loadHistory(uId) {
     if (!historyList || !_sbClient) return;
-    const { data } = await _sbClient.from('chats').select('*').eq('user_id', uId).order('created_at', { ascending: false }).limit(10);
-    if (data) {
+    const { data } = await _sbClient
+        .from('chats')
+        .select('*')
+        .eq('user_id', uId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (data && data.length > 0) {
         historyList.innerHTML = data.map(chat => `
             <div class="history-item" onclick="viewPastChat(\`${chat.user_message.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${chat.bot_response ? chat.bot_response.replace(/`/g, '\\`').replace(/\$/g, '\\$') : '...'}\`)">
                 💬 ${chat.user_message.substring(0, 25)}...
             </div>
         `).join('');
+    } else {
+        historyList.innerHTML = '<p class="empty-history">No history yet</p>';
     }
 }
 
+// Function to display a specific chat from history
 window.viewPastChat = (uMsg, bRes) => {
     chatContainer.innerHTML = '';
     appendMessage('user', uMsg);
     appendMessage('bot', bRes);
     document.getElementById('sidebar').classList.remove('sidebar-open');
 };
+
+// --- 8. CHAT LOGIC ---
+async function handleSend() {
+    const message = userInput.value.trim();
+    const imageFile = imgInput.files[0];
+    
+    // Safety check: Exit if no input at all
+    if (!message && !imageFile) return;
+
+    // 1. Display User message + local image preview immediately
+    appendMessage('user', message, imageFile);
+    
+    // Clear the input fields and preview UI right away
+    const currentMsg = message;
+    userInput.value = "";
+    imgInput.value = "";
+    if (previewBox) previewBox.style.display = "none";
+
+    // 2. Create the "thinking" bubble
+    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
+
+    try {
+        let uId = "guest";
+        let imageUrl = null;
+
+        // Fetch user ID for storage and history
+        if (_sbClient) {
+            const { data: { user } } = await _sbClient.auth.getUser();
+            if (user) uId = user.id;
+        }
+
+        // 3. Upload Image to Supabase Storage if one exists
+        if (imageFile && _sbClient) {
+            const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
+            const { error: uploadError } = await _sbClient.storage
+                .from('chat-images')
+                .upload(fileName, imageFile);
+            
+            if (!uploadError) {
+                const { data: { publicUrl } } = _sbClient.storage
+                    .from('chat-images')
+                    .getPublicUrl(fileName);
+                imageUrl = publicUrl;
+            } else {
+                console.error("Upload error:", uploadError.message);
+            }
+        }
+
+        // 4. Send payload to your API
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                message: currentMsg || "Analyze this image.", 
+                userId: uId, 
+                imageUrl: imageUrl 
+            })
+        });
+        
+        const data = await res.json();
+        
+        // 5. Replace "Thinking" text with real reply + Copy Button
+        if (bDiv) {
+            bDiv.innerHTML = `<span>${data.reply}</span>`;
+            
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '📋';
+            copyBtn.dataset.copyValue = data.reply; // Store text inside the button
+            copyBtn.onclick = function() { 
+                window.copyToClipboard(this.dataset.copyValue, this); 
+            };
+            bDiv.appendChild(copyBtn);
+        }
+
+        // Refresh sidebar history if user is logged in
+        if (uId !== "guest") loadHistory(uId);
+
+    } catch (err) {
+        // If the API crashes or connection drops
+        if (bDiv) {
+            bDiv.innerText = "Harsh GPT: I'm speechless (literally, something went wrong).";
+        }
+        console.error("Chat Error:", err);
+    }
+}
 
 // --- 8. MIC & KILL SWITCH ---
 if (voiceBtn) {

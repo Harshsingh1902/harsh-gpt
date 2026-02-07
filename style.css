@@ -462,3 +462,41 @@ input {
 .message.user {
     align-self: flex-end;
 }
+
+.message {
+    position: relative;
+    max-width: 85%;
+    width: fit-content;
+    word-wrap: break-word; 
+    overflow-wrap: anywhere; /* Harder wrap for long strings */
+    white-space: pre-wrap;
+    padding: 15px 20px;
+    margin: 10px 0;
+    border-radius: 15px;
+    line-height: 1.5;
+    display: block; /* Changed from flex to block to prevent layout breaking */
+}
+
+.message.bot {
+    align-self: flex-start;
+    background: #333;
+    padding-right: 50px !important; /* Extra room for the icon */
+}
+
+.message.user {
+    align-self: flex-end;
+    background: #007bff;
+    margin-left: auto; /* Pushes user bubble to the right */
+}
+
+/* Ensure the copy button doesn't float outside */
+.copy-btn {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    padding: 5px;
+}
