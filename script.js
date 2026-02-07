@@ -178,16 +178,26 @@ window.setTheme = (theme) => { document.documentElement.setAttribute('data-theme
 window.setFont = (fontClass) => { document.body.className = fontClass; localStorage.setItem('harsh-gpt-font', fontClass); };
 
 // --- 7. AUTH, HISTORY & NAVIGATION ---
+// --- 7. AUTH, HISTORY & NAVIGATION ---
 if (_sbClient) {
     // Logic for Google Login
     loginBtn.onclick = async (e) => { 
         e.preventDefault();
         const { error } = await _sbClient.auth.signInWithOAuth({ 
             provider: 'google', 
-            options: { redirectTo: window.location.origin } 
+            options: { 
+                scopes: 'https://www.googleapis.com/auth/gmail.readonly', 
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'select_account consent'
+                },
+                redirectTo: window.location.origin 
+            } 
         }); 
         if (error) console.error("Login Error:", error.message);
     };
+
+    // ... (rest of your logout and navigation logic stays exactly the same)
 
     // Logic for Logout
     window.handleLogout = async () => { 
