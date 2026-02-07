@@ -17,11 +17,12 @@ function copyToClipboard(text, btn) {
         console.error('Failed to copy: ', err);
     });
 }
- appendMessage(role, text) {
+ appendMessage(role, text) 
+ {
     const chatContainer = document.getElementById('chatContainer');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
-
+ }
     // Create a container for the text
     const textSpan = document.createElement('span');
     textSpan.innerText = text;
@@ -39,7 +40,7 @@ function copyToClipboard(text, btn) {
 
     chatContainer.appendChild(msgDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+
 
 // DOM Elements
 const sendBtn = document.getElementById("sendBtn");
