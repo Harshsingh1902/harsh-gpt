@@ -1,20 +1,25 @@
-// harsh-gmail.js - THE GMAIL WING
+// harsh-gmail.js - THE GMAIL WING (Safe Version)
 async function triggerHarshInbox() {
-    // 1. Get the session from Supabase
+    // 1. Close the sidebar menu immediately so the user can see the chat
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.classList.remove('sidebar-open');
+    }
+
+    // 2. Get the session from Supabase
     const { data: { session } } = await _sbClient.auth.getSession();
-    
-    // 2. Extract the Google "Key" (provider_token)
     const googleToken = session?.provider_token;
 
+    // 3. Check if we have the Gmail "Key"
     if (!googleToken) {
-        appendMessage('bot', "Harsh GPT: I don't see the Gmail 'Key'. You need to Log Out and Log In again to grant permission.");
+        appendMessage('bot', "Harsh GPT: I don't have permission to see your emails yet. Please **Logout** and **Login** again, then check the 'Gmail' box on the Google screen.");
         return;
     }
 
     const botDiv = appendMessage('bot', "Harsh GPT is sniffing through your emails...");
 
     try {
-        // 3. Fetch latest 3 unread emails from Google API
+        // 4. Fetch latest 3 unread emails
         const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread&maxResults=3', {
             headers: { 'Authorization': `Bearer ${googleToken}` }
         });
@@ -35,6 +40,7 @@ async function triggerHarshInbox() {
             botDiv.innerText = "Harsh GPT: Your inbox is clean. I'm actually impressed.";
         }
     } catch (err) {
-        botDiv.innerText = "Harsh GPT: Google blocked me. Make sure you enabled the Gmail API in Google Cloud!";
+        botDiv.innerText = "Harsh GPT: Connection failed. Check if Gmail API is enabled in Google Console.";
+        console.error("Gmail Error:", err);
     }
 }
