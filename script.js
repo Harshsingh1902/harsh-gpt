@@ -265,44 +265,48 @@ window.addEventListener('DOMContentLoaded', async () => {
 if (sendBtn) sendBtn.onclick = handleSend;
 if (userInput) userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
 
-// // --- KILL SWITCH LOGIC ---
-// async function handleKillSwitch() {
-//     // 1. Double Confirmation (Prevent accidents)
-//     const firstCheck = confirm("⚠️ Are you sure? This will PERMANENTLY delete all your chat history from our database.");
-//     if (!firstCheck) return;
+// --- KILL SWITCH LOGIC ---
+async function handleKillSwitch() {
+    // 1. Double Confirmation (Prevent accidents)
+    const firstCheck = confirm("⚠️ Are you sure? This will PERMANENTLY delete all your chat history from our database.");
+    if (!firstCheck) return;
 
-//     const secondCheck = confirm("🚀 FINAL WARNING: This action cannot be undone. Everything goes 'Poof'. Proceed?");
-//     if (!secondCheck) return;
+    const secondCheck = confirm("🚀 FINAL WARNING: This action cannot be undone. Everything goes 'Poof'. Proceed?");
+    if (!secondCheck) return;
 
-//     try {
-//         // 2. Get the current user
-//         const { data: { user } } = await _sbClient.auth.getUser();
+    try {
+        // 2. Get the current user using your client variable _sbClient
+        const { data: { user } } = await _sbClient.auth.getUser();
         
-//         if (!user) {
-//             alert("Guest data is not stored permanently. Just refresh the page to clear it!");
-//             return;
-//         }
+        if (!user) {
+            alert("Guest data is not stored permanently. Just refresh the page to clear it!");
+            return;
+        }
 
-//         // 3. Delete from Supabase 'chats' table
-//         const { error } = await _sbClient
-//             .from('chats')
-//             .delete()
-//             .eq('user_id', user.id); // Deletes only rows belonging to this user
+        // 3. Delete from Supabase 'chats' table
+        const { error } = await _sbClient
+            .from('chats')
+            .delete()
+            .eq('user_id', user.id); // Deletes only rows belonging to this user
 
-//         if (error) throw error;
+        if (error) throw error;
 
-//         // 4. Update UI
-//         alert("Success! Your digital footprint has been erased. 🔥");
+        // 4. Update UI
+        alert("Success! Your digital footprint has been erased. 🔥");
         
-//         // Clear the chat screen and history list
-//         chatContainer.innerHTML = '<div class="message bot">History erased. Starting fresh...</div>';
-//         if (historyList) historyList.innerHTML = '<p class="empty-history">No history yet</p>';
+        // Clear the chat screen and history list
+        const chatContainer = document.getElementById('chatContainer');
+        const historyList = document.getElementById('chat-history-list');
         
-//         // Close sidebar
-//         document.getElementById('sidebar').classList.remove('sidebar-open');
+        if (chatContainer) chatContainer.innerHTML = '<div class="message bot">History erased. Starting fresh...</div>';
+        if (historyList) historyList.innerHTML = '<p class="empty-history">No history yet</p>';
+        
+        // Close modal and sidebar
+        closeSettings();
+        document.getElementById('sidebar').classList.remove('sidebar-open');
 
-//     } catch (err) {
-//         console.error("Kill Switch Error:", err.message);
-//         alert("Failed to erase data: " + err.message);
-//     }
-// }
+    } catch (err) {
+        console.error("Kill Switch Error:", err.message);
+        alert("Failed to erase data: " + err.message);
+    }
+}
