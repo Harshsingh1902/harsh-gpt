@@ -307,11 +307,60 @@ window.handleKillSwitch = async () => {
 };
 
 // --- 9. INITIALIZATION ---
-window.addEventListener('DOMContentLoaded', () => {
-    window.setTheme(localStorage.getItem('harsh-gpt-theme') || 'antariksh');
-    window.setFont(localStorage.getItem('harsh-gpt-font') || 'font-default');
-    // Note: Greeting is now handled strictly by onAuthStateChange to prevent duplicates
+window.addEventListener('DOMContentLoaded', async () => {
+    // 1. Set UI Preferences (Theme & Font)
+    const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
+    const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
+    
+    if (window.setTheme) window.setTheme(savedTheme);
+    if (window.setFont) window.setFont(savedFont);
+
+    // 2. The Login Fix: Manually capture the session on page load
+    if (_sbClient) {
+        try {
+            // This is the "magic" line that reads the Google login token from the URL
+            const { data: { session }, error } = await _sbClient.auth.getSession();
+            
+            if (session) {
+                console.log("Session detected for:", session.user.email);
+                
+                // Force UI to logged-in state
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (accountBtn) accountBtn.style.display = 'block';
+                if (menuBtn) menuBtn.style.display = 'block';
+                
+                // Prevent double greetings: only greet if chat is empty
+                if (chatContainer && chatContainer.innerHTML.trim() === "") {
+                    appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
+                    if (typeof loadHistory === 'function') loadHistory(session.user.id);
+                }
+            } else {
+                console.log("No session found - Guest Mode.");
+                if (chatContainer && chatContainer.innerHTML.trim() === "") {
+                    appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
+                }
+            }
+        } catch (err) {
+            console.error("Initialization Auth Error:", err);
+        }
+    }
 });
 
-if (sendBtn) sendBtn.onclick = handleSend;
-if (userInput) userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
+// --- GLOBAL EVENT LISTENERS ---
+
+// 1. Click Listener
+if (sendBtn) {
+    sendBtn.onclick = (e) => {
+        handleSend(e);
+    };
+}
+
+// 2. Keyboard Listener (Enter Key)
+if (userInput) {
+    userInput.onkeydown = (e) => { 
+        if (e.key === "Enter" && !e.shiftKey) { 
+            e.preventDefault(); // CRITICAL: Stops page refresh/signal abortion
+            handleSend(e); 
+        }
+    };
+}
