@@ -177,62 +177,109 @@ window.closeSettings = () => document.getElementById('settings-modal').classList
 window.setTheme = (theme) => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('harsh-gpt-theme', theme); };
 window.setFont = (fontClass) => { document.body.className = fontClass; localStorage.setItem('harsh-gpt-font', fontClass); };
 
-// --- 7. AUTH & HISTORY (Unified Greeting Fix) ---
+// --- 7. AUTH & HISTORY (Improved Stability) ---
 if (_sbClient) {
-    loginBtn.onclick = async () => { 
-        await _sbClient.auth.signInWithOAuth({ 
+    loginBtn.onclick = async (e) => { 
+        e.preventDefault();
+        const { error } = await _sbClient.auth.signInWithOAuth({ 
             provider: 'google', 
             options: { redirectTo: window.location.origin } 
         }); 
+        if (error) console.error("Login Error:", error.message);
     };
 
     window.handleLogout = async () => { 
         if (confirm("Do you want to logout?")) { 
             await _sbClient.auth.signOut(); 
-            window.location.reload(); 
+            // Don't reload manually, let onAuthStateChange handle it
         } 
     };
 
     _sbClient.auth.onAuthStateChange(async (event, session) => {
-        // Clear container to prevent double messages during login/logout
-        chatContainer.innerHTML = ''; 
+        console.log("Auth Event:", event); // Check your console for this!
+        
+        // Prevent clearing the screen if the event is just a token refresh
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
+            chatContainer.innerHTML = ''; 
 
-        if (session) {
-            loginBtn.style.display = 'none';
-            accountBtn.style.display = 'block';
-            if (menuBtn) menuBtn.style.display = 'block';
-            appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
-            loadHistory(session.user.id);
-        } else {
-            loginBtn.style.display = 'block';
-            accountBtn.style.display = 'none';
-            if (menuBtn) menuBtn.style.display = 'none';
-            appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
+            if (session) {
+                loginBtn.style.display = 'none';
+                accountBtn.style.display = 'block';
+                if (menuBtn) menuBtn.style.display = 'block';
+                appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
+                loadHistory(session.user.id);
+            } else {
+                loginBtn.style.display = 'block';
+                accountBtn.style.display = 'none';
+                if (menuBtn) menuBtn.style.display = 'none';
+                appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
+            }
         }
     });
 }
 
-async function loadHistory(uId) {
-    if (!historyList || !_sbClient) return;
-    const { data } = await _sbClient.from('chats').select('*').eq('user_id', uId).order('created_at', { ascending: false }).limit(10);
+// --- 8. CHAT LOGIC (Abortion Prevention) ---
+async function handleSend(e) {
+    if (e) e.preventDefault(); // Prevents page refresh which causes "aborted" error
 
-    if (data && data.length > 0) {
-        historyList.innerHTML = data.map(chat => `
-            <div class="history-item" onclick="viewPastChat(\`${chat.user_message.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${chat.bot_response ? chat.bot_response.replace(/`/g, '\\`').replace(/\$/g, '\\$') : '...'}\`)">
-                💬 ${chat.user_message.substring(0, 25)}...
-            </div>
-        `).join('');
-    } else {
-        historyList.innerHTML = '<p class="empty-history">No history yet</p>';
+    const message = userInput.value.trim();
+    const imageFile = imgInput ? imgInput.files[0] : null;
+    
+    if (!message && !imageFile) return;
+
+    appendMessage('user', message, imageFile);
+    
+    userInput.value = "";
+    if (imgInput) imgInput.value = "";
+    if (previewBox) previewBox.style.display = "none";
+
+    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
+
+    try {
+        let uId = "guest";
+        let imageUrl = null;
+
+        // Get session safely
+        const { data: { session } } = await _sbClient.auth.getSession();
+        if (session) uId = session.user.id;
+
+        if (imageFile && uId !== "guest") {
+            const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
+            const { error: uploadError } = await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
+            if (!uploadError) {
+                imageUrl = _sbClient.storage.from('chat-images').getPublicUrl(fileName).data.publicUrl;
+            }
+        }
+
+        // Added a timeout controller to prevent infinite hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s limit
+
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, userId: uId, imageUrl }),
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        const data = await res.json();
+        
+        if (data.reply) {
+            bDiv.innerHTML = `<span>${data.reply}</span>`;
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋';
+            copyBtn.onclick = () => window.copyToClipboard(data.reply, copyBtn);
+            bDiv.appendChild(copyBtn);
+        } else {
+            bDiv.innerText = "Harsh GPT: API returned no response.";
+        }
+
+    } catch (err) {
+        console.error("Full Error:", err);
+        bDiv.innerText = `Harsh GPT: Error - ${err.name === 'AbortError' ? 'Request timed out' : err.message}`;
     }
 }
-
-window.viewPastChat = (uMsg, bRes) => {
-    chatContainer.innerHTML = '';
-    appendMessage('user', uMsg);
-    appendMessage('bot', bRes);
-    document.getElementById('sidebar').classList.remove('sidebar-open');
-};
 
 // --- 8. MIC & KILL SWITCH ---
 if (voiceBtn) {

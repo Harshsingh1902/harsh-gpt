@@ -604,3 +604,20 @@ input {
     display: block;
     margin-bottom: 8px;
 }
+
+.message {
+    display: block !important; /* Force block to allow vertical wrapping */
+    max-width: 80% !important;
+    width: fit-content;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important; /* Forces link breaking */
+    white-space: pre-wrap;
+    padding: 12px 18px;
+    margin: 8px 0;
+}
+
+/* Add this to force the text span to behave */
+.message span {
+    display: block;
+    width: 100%;
+}
