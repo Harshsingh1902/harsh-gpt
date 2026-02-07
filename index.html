@@ -98,6 +98,10 @@
         <hr>
         <p class="harsh-note">"Trust is the foundation of every strong system. Without trust, even the most powerful technology has no value." <br><strong>— Harsh (Developer)</strong></p>
     </div>
+    
+    <button class="footer-btn kill-switch-btn" onclick="handleKillSwitch()" style="color: #ff4b2b; font-weight: bold; margin-top: 10px; border: 1px solid rgba(255, 75, 43, 0.3);">
+        🔥 Kill Switch
+    </button>
     <a href="mailto:harsh@example.com?subject=HarshGPT Help" class="help-link">Help: Contact Developer</a>
 </div>
         </div>
@@ -117,7 +121,10 @@
                 <button id="accountBtn" class="icon-btn" style="display:none" onclick="handleLogout()">👤</button>
             </div>
         </header>
-
+         <div class="sidebar-footer">
+    <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
+    
+</div>
         <main class="chat-container" id="chatContainer">
             <div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>
         </main>
