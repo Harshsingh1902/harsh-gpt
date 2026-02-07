@@ -414,3 +414,22 @@ input {
 .copy-btn:active {
     transform: scale(0.9);
 }
+
+.copy-btn {
+    -webkit-appearance: none; /* Keep this if you want to strip defaults */
+    appearance: none;
+    
+    /* ADD THESE TO MAKE IT WORK */
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    padding: 5px 10px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    z-index: 10 !important; /* Ensures it sits above the bubble text */
+    display: inline-block !important;
+}
+
+.copy-btn:active {
+    background: rgba(255, 255, 255, 0.5) !important;
+}
