@@ -50,9 +50,15 @@ function appendMessage(role, text) {
     if (role === 'bot') {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
-        copyBtn.innerHTML = '📋'; // Or use "Copy"
+        copyBtn.innerHTML = '📋';
         copyBtn.title = "Copy message";
-        copyBtn.onclick = () => copyToClipboard(text, copyBtn);
+        
+        // Use a standard function to ensure 'text' is captured correctly
+        copyBtn.onclick = function() {
+            // Use window. to make sure it finds the global function we made
+            window.copyToClipboard(text, copyBtn);
+        };
+        
         msgDiv.appendChild(copyBtn);
     }
 
