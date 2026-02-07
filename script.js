@@ -3,8 +3,7 @@ const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
-
-// --- 2. GLOBAL UTILITIES (Make sure these are at the TOP) ---
+// --- 2. GLOBAL UTILITY FUNCTIONS ---
 window.copyToClipboard = function(content, btn) {
     navigator.clipboard.writeText(content).then(() => {
         const original = btn.innerHTML;
@@ -13,64 +12,48 @@ window.copyToClipboard = function(content, btn) {
     }).catch(err => console.error("Copy failed", err));
 };
 
-// --- 3. THE MESSAGE FUNCTION ---
-// We define this BEFORE we try to call it on line 20
-function appendMessage(role, text) {
-    const chatContainer = document.getElementById('chatContainer') || document.getElementById('chat-container');
+// --- 3. THE UNIFIED MESSAGE FUNCTION ---
+function appendMessage(role, text, imageFile = null) {
+    const chatContainer = document.getElementById('chatContainer');
     if (!chatContainer) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
 
+    // Handle Image if present (for user messages)
+    if (imageFile) {
+        const imgPreview = document.createElement("img");
+        imgPreview.src = typeof imageFile === 'string' ? imageFile : URL.createObjectURL(imageFile);
+        imgPreview.style.maxWidth = "200px";
+        imgPreview.style.borderRadius = "8px";
+        imgPreview.style.display = "block";
+        imgPreview.style.marginBottom = "8px";
+        msgDiv.appendChild(imgPreview);
+    }
+
+    // Handle Text
     const textSpan = document.createElement('span');
     textSpan.innerText = text;
     msgDiv.appendChild(textSpan);
 
+    // Add Copy Button for Bot
     if (role === 'bot') {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.innerHTML = '📋';
-        copyBtn.onclick = () => window.copyToClipboard(text, copyBtn);
+        copyBtn.dataset.copyValue = text; // Fixes the ReferenceError
+        copyBtn.onclick = function() {
+            window.copyToClipboard(this.dataset.copyValue, this);
+        };
         msgDiv.appendChild(copyBtn);
     }
 
     chatContainer.appendChild(msgDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
+    return msgDiv;
 }
 
-// --- 4. YOUR INITIALIZATION LOGIC (Line 20 starts around here) ---
-// Now when line 20 calls appendMessage, it will actually exist!
-
-    // Create a container for the text
-    const textSpan = document.createElement('span');
-    textSpan.innerText = text;
-    msgDiv.appendChild(textSpan);
-
-
-    if (role === 'bot') {
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'copy-btn';
-        copyBtn.innerHTML = '📋';
-        
-        // 1. We store the message text directly ON the button 
-        // This makes it impossible for the code to "forget" what to copy
-        copyBtn.dataset.copyValue = text;
-
-        // 2. Use a standard function to prevent the ReferenceError
-        copyBtn.onclick = function() {
-            // We pull the text back off the button we just clicked
-            const textToCopy = this.dataset.copyValue;
-            window.copyToClipboard(textToCopy, this);
-        };
-        
-        msgDiv.appendChild(copyBtn);
-    }
-
-    chatContainer.appendChild(msgDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-
-
-// DOM Elements
+// --- 4. DOM ELEMENTS ---
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
 const chatContainer = document.getElementById("chatContainer");
@@ -80,79 +63,51 @@ const accountBtn = document.getElementById("accountBtn");
 const menuBtn = document.getElementById("menuBtn");
 const historyList = document.getElementById("chat-history-list");
 
-// Image Preview Elements
 const imgInput = document.getElementById('imageInput');
 const previewBox = document.getElementById('imagePreviewBox');
 const previewImg = document.getElementById('previewImg');
 const fileNameSpan = document.getElementById('fileName');
 const cancelBtn = document.getElementById('cancelImg');
 
-// --- 2. IMAGE PREVIEW LOGIC (NEW) ---
-imgInput.addEventListener('change', function() {
-    const file = this.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewImg.src = e.target.result;
-            fileNameSpan.textContent = file.name;
-            // Force the preview box to show as flex
-            previewBox.style.display = 'flex'; 
-        };
-        reader.readAsDataURL(file);
-    }
-});
+// --- 5. IMAGE PREVIEW LOGIC ---
+if (imgInput) {
+    imgInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImg.src = e.target.result;
+                fileNameSpan.textContent = file.name;
+                previewBox.style.display = 'flex'; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
 
-// Cancel Image Selection
 if (cancelBtn) {
     cancelBtn.onclick = () => {
         imgInput.value = ""; 
-        previewBox.style.display = 'none'; // Hide the preview box
+        previewBox.style.display = 'none';
     };
 }
 
-// --- 3. PREMIUM UI LOGIC ---
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('sidebar-open');
-}
+// --- 6. PREMIUM UI LOGIC ---
+window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('sidebar-open');
+window.openSettings = () => document.getElementById('settings-modal').classList.remove('hidden');
+window.closeSettings = () => document.getElementById('settings-modal').classList.add('hidden');
 
-function openSettings() {
-    document.getElementById('settings-modal').classList.remove('hidden');
-    if (window.innerWidth < 480) {
-        document.getElementById('sidebar').classList.remove('sidebar-open');
-    }
-}
-
-function closeSettings() {
-    document.getElementById('settings-modal').classList.add('hidden');
-}
-
-function setTheme(theme) {
+window.setTheme = (theme) => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('harsh-gpt-theme', theme);
-}
+};
 
-function setFont(fontClass) {
+window.setFont = (fontClass) => {
     document.body.className = fontClass;
     localStorage.setItem('harsh-gpt-font', fontClass);
-}
+};
 
-function goHome() {
-    _sbClient.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
-        } else {
-            chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
-        }
-    });
-    document.getElementById('sidebar').classList.remove('sidebar-open');
-}
-
-function startNewChat() {
-    chatContainer.innerHTML = '<div class="message bot">New chat started! How can I help?</div>';
-    document.getElementById('sidebar').classList.remove('sidebar-open');
-}
-
-// --- 4. AUTH & HISTORY ---
+// --- 7. AUTH & HISTORY ---
 if (_sbClient) {
     loginBtn.onclick = async () => {
         await _sbClient.auth.signInWithOAuth({
@@ -162,8 +117,7 @@ if (_sbClient) {
     };
 
     window.handleLogout = async () => {
-        const confirmLogout = confirm("Do you want to logout?");
-        if (confirmLogout) {
+        if (confirm("Do you want to logout?")) {
             await _sbClient.auth.signOut();
             window.location.reload();
         }
@@ -174,206 +128,124 @@ if (_sbClient) {
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
-            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
             loadHistory(session.user.id);
         } else {
             loginBtn.style.display = 'block';
             accountBtn.style.display = 'none';
             if (menuBtn) menuBtn.style.display = 'none';
-            chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
         }
     });
 }
 
 async function loadHistory(uId) {
     if (!historyList || !_sbClient) return;
-    const { data } = await _sbClient
-        .from('chats')
-        .select('user_message, bot_response')
-        .eq('user_id', uId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
+    const { data } = await _sbClient.from('chats').select('*').eq('user_id', uId).order('created_at', { ascending: false }).limit(10);
     if (data && data.length > 0) {
         historyList.innerHTML = data.map(chat => `
             <div class="history-item" onclick="viewPastChat(\`${chat.user_message.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${chat.bot_response ? chat.bot_response.replace(/`/g, '\\`').replace(/\$/g, '\\$') : '...'}\`)">
                 💬 ${chat.user_message.substring(0, 25)}...
             </div>
         `).join('');
-    } else {
-        historyList.innerHTML = '<p class="empty-history">No history yet</p>';
     }
 }
 
-function viewPastChat(uMsg, bRes) {
-    chatContainer.innerHTML = `
-        <div class="message user">${uMsg}</div>
-        <div class="message bot">${bRes}</div>
-    `;
+window.viewPastChat = (uMsg, bRes) => {
+    chatContainer.innerHTML = '';
+    appendMessage('user', uMsg);
+    appendMessage('bot', bRes);
     document.getElementById('sidebar').classList.remove('sidebar-open');
-}
+};
 
-// --- 5. MIC LOGIC ---
-if (voiceBtn) {
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    voiceBtn.onclick = () => {
-        recognition.start();
-        voiceBtn.textContent = "🛑";
-    };
-    recognition.onresult = (e) => {
-        userInput.value = e.results[0][0].transcript;
-        voiceBtn.textContent = "🎤";
-        handleSend();
-    };
-    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
-}
-
-// --- 6. CHAT LOGIC ---
+// --- 8. CHAT LOGIC ---
 async function handleSend() {
     const message = userInput.value.trim();
     const imageFile = imgInput.files[0];
-    
     if (!message && !imageFile) return;
 
-    // UI: Create User Message bubble
-    const uDiv = document.createElement("div");
-    uDiv.className = "message user";
+    appendMessage('user', message, imageFile);
     
-    if (imageFile) {
-        const imgPreview = document.createElement("img");
-        imgPreview.src = URL.createObjectURL(imageFile);
-        imgPreview.style.maxWidth = "200px";
-        imgPreview.style.borderRadius = "8px";
-        imgPreview.style.display = "block";
-        imgPreview.style.marginBottom = "8px";
-        uDiv.appendChild(imgPreview);
-    }
-    
-    const textSpan = document.createElement("span");
-    textSpan.textContent = message || (imageFile ? "Sent an image." : "");
-    uDiv.appendChild(textSpan);
-    chatContainer.appendChild(uDiv);
-
-    // RESET: Clear input and hide the preview bar
     userInput.value = "";
     imgInput.value = "";
     previewBox.style.display = "none";
 
-    // UI: Bot Thinking
-    const bDiv = document.createElement("div");
-    bDiv.className = "message bot";
-    bDiv.textContent = "Harsh GPT is thinking..."; 
-    chatContainer.appendChild(bDiv);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
 
     try {
         let uId = "guest";
         let imageUrl = null;
-
         if (_sbClient) {
             const { data: { user } } = await _sbClient.auth.getUser();
             if (user) uId = user.id;
         }
 
-        // Upload to Supabase Storage
         if (imageFile && _sbClient) {
             const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
-            const { data, error } = await _sbClient.storage
-                .from('chat-images')
-                .upload(fileName, imageFile);
-
-            if (error) throw new Error("Upload failed: " + error.message);
-
-            const { data: { publicUrl } } = _sbClient.storage
-                .from('chat-images')
-                .getPublicUrl(fileName);
-            
+            await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
+            const { data: { publicUrl } } = _sbClient.storage.from('chat-images').getPublicUrl(fileName);
             imageUrl = publicUrl;
         }
 
-        // API Call
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                message: message || "Analyze this image.", 
-                userId: uId,
-                imageUrl: imageUrl 
-            })
+            body: JSON.stringify({ message: message || "Analyze this image.", userId: uId, imageUrl: imageUrl })
         });
         
         const data = await res.json();
-        bDiv.textContent = data.reply; 
         
+        // Finalize Bot Message with Copy Button
+        bDiv.innerHTML = ''; 
+        const textSpan = document.createElement('span');
+        textSpan.innerText = data.reply;
+        bDiv.appendChild(textSpan);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.innerHTML = '📋';
+        copyBtn.dataset.copyValue = data.reply;
+        copyBtn.onclick = function() { window.copyToClipboard(this.dataset.copyValue, this); };
+        bDiv.appendChild(copyBtn);
+
         if (uId !== "guest") loadHistory(uId);
-        
     } catch (err) {
-        console.error(err);
-        bDiv.textContent = "Harsh GPT Error: " + err.message;
+        bDiv.textContent = "Error: " + err.message;
     }
-    chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// --- 7. INITIALIZATION ---
-window.addEventListener('DOMContentLoaded', async () => {
-    const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
-    const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
-    setTheme(savedTheme);
-    setFont(savedFont);
+// --- 9. MIC & KILL SWITCH ---
+if (voiceBtn) {
+    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    voiceBtn.onclick = () => { recognition.start(); voiceBtn.textContent = "🛑"; };
+    recognition.onresult = (e) => { 
+        userInput.value = e.results[0][0].transcript; 
+        voiceBtn.textContent = "🎤"; 
+        handleSend(); 
+    };
+    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
+}
 
+window.handleKillSwitch = async () => {
+    if (!confirm("⚠️ PERMANENTLY delete history?")) return;
+    const { data: { user } } = await _sbClient.auth.getUser();
+    if (user) {
+        await _sbClient.from('chats').delete().eq('user_id', user.id);
+        alert("Erased!");
+        location.reload();
+    }
+};
+
+// --- 10. INITIALIZATION ---
+window.addEventListener('DOMContentLoaded', async () => {
+    setTheme(localStorage.getItem('harsh-gpt-theme') || 'antariksh');
+    setFont(localStorage.getItem('harsh-gpt-font') || 'font-default');
+    
     if (_sbClient) {
         const { data: { user } } = await _sbClient.auth.getUser();
-        if (user) {
-            chatContainer.innerHTML = `<div class="message bot">Welcome back, ${user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
-        }
+        if (user) appendMessage('bot', `Welcome back, ${user.user_metadata.full_name || 'User'}! 👋`);
+        else appendMessage('bot', "Hello 👋 I’m Harsh GPT. Login for permanent memory!");
     }
 });
 
 if (sendBtn) sendBtn.onclick = handleSend;
+
 if (userInput) userInput.onkeydown = (e) => { if (e.key === "Enter") handleSend(); };
-
-// --- KILL SWITCH LOGIC ---
-async function handleKillSwitch() {
-    // 1. Double Confirmation (Prevent accidents)
-    const firstCheck = confirm("⚠️ Are you sure? This will PERMANENTLY delete all your chat history from our database.");
-    if (!firstCheck) return;
-
-    const secondCheck = confirm("🚀 FINAL WARNING: This action cannot be undone. Everything goes 'Poof'. Proceed?");
-    if (!secondCheck) return;
-
-    try {
-        // 2. Get the current user using your client variable _sbClient
-        const { data: { user } } = await _sbClient.auth.getUser();
-        
-        if (!user) {
-            alert("Guest data is not stored permanently. Just refresh the page to clear it!");
-            return;
-        }
-
-        // 3. Delete from Supabase 'chats' table
-        const { error } = await _sbClient
-            .from('chats')
-            .delete()
-            .eq('user_id', user.id); // Deletes only rows belonging to this user
-
-        if (error) throw error;
-
-        // 4. Update UI
-        alert("Success! Your digital footprint has been erased. 🔥");
-        
-        // Clear the chat screen and history list
-        const chatContainer = document.getElementById('chatContainer');
-        const historyList = document.getElementById('chat-history-list');
-        
-        if (chatContainer) chatContainer.innerHTML = '<div class="message bot">History erased. Starting fresh...</div>';
-        if (historyList) historyList.innerHTML = '<p class="empty-history">No history yet</p>';
-        
-        // Close modal and sidebar
-        closeSettings();
-        document.getElementById('sidebar').classList.remove('sidebar-open');
-
-    } catch (err) {
-        console.error("Kill Switch Error:", err.message);
-        alert("Failed to erase data: " + err.message);
-    }
-}
