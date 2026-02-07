@@ -555,3 +555,42 @@ input {
     border-radius: 4px;
     padding: 4px;
 }
+
+.message {
+    position: relative;
+    max-width: 80%;
+    width: fit-content;
+    padding: 12px 16px;
+    border-radius: 15px;
+    
+    /* THE FIX: Use block and strict wrapping */
+    display: block !important;       
+    word-wrap: break-word !important; 
+    overflow-wrap: anywhere !important; 
+    white-space: pre-wrap;           
+    line-height: 1.5;
+}
+
+.message.user {
+    align-self: flex-end;
+    margin-left: auto;              
+    background-color: #007bff;
+    color: white;
+}
+
+.message.bot {
+    align-self: flex-start;
+    margin-right: auto;             
+    background-color: #333;
+    color: #efefef;
+    padding-right: 45px !important; 
+}
+
+/* Ensure images inside bubbles don't push the walls out */
+.chat-img-preview {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: block;
+    margin-bottom: 8px;
+}
