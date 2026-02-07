@@ -440,3 +440,25 @@ input {
     align-self: flex-start;
     padding-right: 40px !important; /* Space for the 📋 icon */
 }
+
+.message {
+    position: relative;
+    max-width: 85%;
+    width: fit-content;
+    word-wrap: break-word; /* Forces long words to break */
+    overflow-wrap: break-word;
+    white-space: pre-wrap; /* Preserves formatting but wraps text */
+    padding: 12px 16px;
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.message.bot {
+    align-self: flex-start;
+    padding-right: 45px !important; /* Space for the copy icon */
+}
+
+.message.user {
+    align-self: flex-end;
+}
