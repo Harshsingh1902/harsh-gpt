@@ -15,7 +15,7 @@ window.copyToClipboard = function(content, btn) {
 // --- 3. THE UNIFIED MESSAGE FUNCTION ---
 function appendMessage(role, text, imageFile = null) {
     const chatContainer = document.getElementById('chatContainer');
-    if (!chatContainer) return;
+    if (!chatContainer || !text) return;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
@@ -32,25 +32,66 @@ function appendMessage(role, text, imageFile = null) {
     }
 
     // Handle Text
-    const textSpan = document.createElement('span');
+   const textSpan = document.createElement('span');
     textSpan.innerText = text;
     msgDiv.appendChild(textSpan);
 
     // Add Copy Button for Bot
-    if (role === 'bot') {
+    const isGreeting = text.includes("Welcome") || text.includes("Hello") || text.includes("thinking");
+    
+    if (role === 'bot' && !isGreeting) {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.innerHTML = '📋';
-        copyBtn.dataset.copyValue = text; // Fixes the ReferenceError
-        copyBtn.onclick = function() {
-            window.copyToClipboard(this.dataset.copyValue, this);
-        };
+        copyBtn.onclick = () => window.copyToClipboard(text, copyBtn);
         msgDiv.appendChild(copyBtn);
     }
 
     chatContainer.appendChild(msgDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
     return msgDiv;
+}
+
+async function handleSend() {
+    const message = userInput.value.trim();
+    if (!message && !imgInput.files[0]) return;
+
+    // 1. User Message
+    appendMessage('user', message, imgInput.files[0]);
+    
+    // Reset inputs
+    const currentMsg = message;
+    userInput.value = "";
+    previewBox.style.display = "none";
+
+    // 2. Bot Thinking
+    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
+
+    try {
+        const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: currentMsg })
+        });
+        
+        const data = await res.json();
+        
+        // 3. Update Bot Message
+        if (data.reply) {
+            bDiv.innerHTML = `<span>${data.reply}</span>`;
+            // Manually add button back to the updated div
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '📋';
+            copyBtn.onclick = () => window.copyToClipboard(data.reply, copyBtn);
+            bDiv.appendChild(copyBtn);
+        } else {
+            bDiv.innerText = "Harsh GPT: I'm speechless (API Error).";
+        }
+    } catch (err) {
+        bDiv.innerText = "Harsh GPT: I'm speechless (Connection Error).";
+        console.error(err);
+    }
 }
 
 // --- 4. DOM ELEMENTS ---
