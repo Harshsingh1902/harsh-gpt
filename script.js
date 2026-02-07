@@ -17,13 +17,7 @@ function copyToClipboard(text, btn) {
         console.error('Failed to copy: ', err);
     });
 }
-🛠️ Part 2: Update your appendMessage Function
-Now, scroll down in your script.js until you find the function that adds messages to the screen (it's likely called appendMessage or something similar).
-
-Replace that function with this updated version:
-
-JavaScript
-function appendMessage(role, text) {
+ appendMessage(role, text) {
     const chatContainer = document.getElementById('chatContainer');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
