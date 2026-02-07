@@ -26,9 +26,6 @@
 
         <div class="sidebar-footer">
             <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
-            <button class="footer-btn kill-switch-btn" onclick="handleKillSwitch()" style="color: #ff4b2b; font-weight: bold; margin-top: 10px; border: 1px solid rgba(255, 75, 43, 0.3);">
-                🔥 Kill Switch
-            </button>
         </div>
     </div>
 
@@ -62,13 +59,16 @@
                 <div class="privacy-box">
                     <h3>Harsh GPT – Safety & Privacy Policy</h3>
                     <p><strong>Last Updated:</strong> February 2026</p>
-                    <p>Welcome to Harsh GPT. Your privacy is our priority.</p>
+                    <p>Your data is stored securely via Supabase and is never shared with 3rd parties.</p>
                     <hr>
-                    <h4>1. Data Security</h4>
-                    <p>Strong encryption and secure cloud infrastructure protect your information.</p>
-                    <p class="harsh-note">"Trust is the foundation of every strong system." <br><strong>— Harsh (Developer)</strong></p>
+                    <p class="harsh-note">"Trust is the foundation of every strong system."<br><strong>— Harsh</strong></p>
                 </div>
-                <a href="mailto:harsh@example.com?subject=HarshGPT Help" class="help-link">Help: Contact Developer</a>
+                
+                <button class="kill-switch-btn" onclick="handleKillSwitch()" style="width: 100%; padding: 12px; background: #ff4b2b; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3);">
+                    🔥 KILL SWITCH: Erase My Data
+                </button>
+                
+                <a href="mailto:harsh@example.com?subject=HarshGPT Help" class="help-link" style="display: block; text-align: center; margin-top: 15px; font-size: 12px; color: #aaa;">Help: Contact Developer</a>
             </div>
         </div>
     </div>
@@ -95,17 +95,17 @@
         <footer class="input-area">
             <div id="imagePreviewBox" style="display: none; padding: 12px; background: rgba(40, 40, 40, 0.95); border-bottom: 1px solid #444; align-items: center; gap: 12px; border-radius: 12px 12px 0 0; backdrop-filter: blur(10px);">
                 <div style="position: relative; flex-shrink: 0;">
-                    <img id="previewImg" src="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #ff4b2b; display: block;">
-                    <button id="cancelImg" type="button" style="position: absolute; top: -10px; right: -10px; background: #ff4b2b; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 14px; font-weight: bold; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 10;">×</button>
+                    <img id="previewImg" src="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #ff4b2b;">
+                    <button id="cancelImg" type="button" style="position: absolute; top: -10px; right: -10px; background: #ff4b2b; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer;">×</button>
                 </div>
-                <div style="display: flex; flex-direction: column; overflow: hidden; justify-content: center;">
-                    <span id="fileName" style="font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;"></span>
-                    <span style="font-size: 11px; color: #00ff88; font-weight: 500;">Ready for roasting... 🔥</span>
+                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                    <span id="fileName" style="font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;"></span>
+                    <span style="font-size: 11px; color: #00ff88;">Ready for analysis... 🔥</span>
                 </div>
             </div>
 
             <div class="input-wrapper">
-                <label for="imageInput" class="action-btn" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">➕</label>
+                <label for="imageInput" class="action-btn" style="cursor: pointer;">➕</label>
                 <input type="file" id="imageInput" accept="image/*" style="display:none">
                 <input type="text" id="userInput" placeholder="Ask something..." autocomplete="off">
                 <button id="voiceBtn" class="action-btn">🎤</button>
