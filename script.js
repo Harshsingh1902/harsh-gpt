@@ -65,52 +65,70 @@ const previewImg = document.getElementById('previewImg');
 const fileNameSpan = document.getElementById('fileName');
 const cancelBtn = document.getElementById('cancelImg');
 
-// --- 5. CHAT LOGIC ---
+// --- 5. CHAT LOGIC (Fixed & Debugged) ---
 async function handleSend() {
     const message = userInput.value.trim();
     const imageFile = imgInput ? imgInput.files[0] : null;
     
+    // Safety check
     if (!message && !imageFile) return;
 
-    // 1. User Message (Displays image immediately)
+    // 1. User Message (Immediate UI Update)
     appendMessage('user', message, imageFile);
     
-    // Reset inputs
+    // Clear inputs immediately
     userInput.value = "";
     if (imgInput) imgInput.value = "";
     if (previewBox) previewBox.style.display = "none";
 
-    // 2. Bot Thinking
+    // 2. Bot Placeholder
     const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
 
     try {
         let uId = "guest";
         let imageUrl = null;
+
+        // Securely get the user session
         if (_sbClient) {
             const { data: { user } } = await _sbClient.auth.getUser();
             if (user) uId = user.id;
         }
 
-        // Image Upload Logic
+        // 3. Image Upload (Only if logged in)
         if (imageFile && _sbClient && uId !== "guest") {
             const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
-            const { error: uploadError } = await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
-            if (!uploadError) {
-                const { data: { publicUrl } } = _sbClient.storage.from('chat-images').getPublicUrl(fileName);
+            const { error: uploadError } = await _sbClient.storage
+                .from('chat-images')
+                .upload(fileName, imageFile);
+            
+            if (uploadError) {
+                console.error("Supabase Upload Error:", uploadError.message);
+            } else {
+                const { data: { publicUrl } } = _sbClient.storage
+                    .from('chat-images')
+                    .getPublicUrl(fileName);
                 imageUrl = publicUrl;
             }
         }
 
+        // 4. API Request
+        // IMPORTANT: Ensure your backend is running at this URL
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: message || "Analyze this image.", userId: uId, imageUrl: imageUrl })
+            body: JSON.stringify({ 
+                message: message || "Analyze this image.", 
+                userId: uId, 
+                imageUrl: imageUrl 
+            })
         });
+        
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         
         const data = await res.json();
         
-        // 3. Update Bot Thinking Div with real content
-        if (data.reply) {
+        // 5. Finalize Bot Response
+        if (data && data.reply) {
             bDiv.innerHTML = `<span>${data.reply}</span>`;
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
@@ -118,13 +136,16 @@ async function handleSend() {
             copyBtn.onclick = function() { window.copyToClipboard(data.reply, this); };
             bDiv.appendChild(copyBtn);
         } else {
-            bDiv.innerText = "Harsh GPT: I'm speechless (API Error).";
+            bDiv.innerText = "Harsh GPT: I'm speechless (Empty response from brain).";
         }
         
         if (uId !== "guest") loadHistory(uId);
 
     } catch (err) {
-        if (bDiv) bDiv.innerText = "Harsh GPT: I'm speechless (literally, something went wrong).";
+        console.error("DETAILED CHAT ERROR:", err);
+        if (bDiv) {
+            bDiv.innerText = `Harsh GPT: I'm speechless. (Error: ${err.message})`;
+        }
     }
 }
 
