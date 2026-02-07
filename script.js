@@ -15,35 +15,33 @@ window.copyToClipboard = function(content, btn) {
 // --- 3. THE UNIFIED MESSAGE FUNCTION ---
 function appendMessage(role, text, imageFile = null) {
     const chatContainer = document.getElementById('chatContainer');
-    if (!chatContainer || !text) return null;
+    if (!chatContainer) return null;
 
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${role}`;
 
-    // Handle Image if present (for user messages)
+    // Fix: Handle Image Display (Instant local preview or URL)
     if (imageFile) {
         const imgPreview = document.createElement("img");
         imgPreview.src = typeof imageFile === 'string' ? imageFile : URL.createObjectURL(imageFile);
-        imgPreview.style.maxWidth = "200px";
-        imgPreview.style.borderRadius = "8px";
-        imgPreview.style.display = "block";
-        imgPreview.style.marginBottom = "8px";
+        imgPreview.className = "chat-img-preview"; // Uses the CSS class we defined
         msgDiv.appendChild(imgPreview);
     }
 
     // Handle Text
-    const textSpan = document.createElement('span');
-    textSpan.innerText = text;
-    msgDiv.appendChild(textSpan);
+    if (text) {
+        const textSpan = document.createElement('span');
+        textSpan.innerText = text;
+        msgDiv.appendChild(textSpan);
+    }
 
-    // Only add copy button for real bot replies (not greetings or thinking)
-    const isGreeting = text.includes("Welcome") || text.includes("Hello") || text.includes("thinking");
-    if (role === 'bot' && !isGreeting) {
+    // Only add copy button for real bot replies
+    const isGreeting = text?.includes("Welcome") || text?.includes("Hello") || text?.includes("thinking");
+    if (role === 'bot' && !isGreeting && text) {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'copy-btn';
         copyBtn.innerHTML = '📋';
-        copyBtn.dataset.copyValue = text; 
-        copyBtn.onclick = function() { window.copyToClipboard(this.dataset.copyValue, this); };
+        copyBtn.onclick = function() { window.copyToClipboard(text, this); };
         msgDiv.appendChild(copyBtn);
     }
 
@@ -74,7 +72,7 @@ async function handleSend() {
     
     if (!message && !imageFile) return;
 
-    // 1. User Message
+    // 1. User Message (Displays image immediately)
     appendMessage('user', message, imageFile);
     
     // Reset inputs
@@ -93,12 +91,14 @@ async function handleSend() {
             if (user) uId = user.id;
         }
 
-        // Image Upload
-        if (imageFile && _sbClient) {
+        // Image Upload Logic
+        if (imageFile && _sbClient && uId !== "guest") {
             const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
-            await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
-            const { data: { publicUrl } } = _sbClient.storage.from('chat-images').getPublicUrl(fileName);
-            imageUrl = publicUrl;
+            const { error: uploadError } = await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
+            if (!uploadError) {
+                const { data: { publicUrl } } = _sbClient.storage.from('chat-images').getPublicUrl(fileName);
+                imageUrl = publicUrl;
+            }
         }
 
         const res = await fetch("/api/chat", {
@@ -109,14 +109,13 @@ async function handleSend() {
         
         const data = await res.json();
         
-        // 3. Finalize Bot Message
+        // 3. Update Bot Thinking Div with real content
         if (data.reply) {
             bDiv.innerHTML = `<span>${data.reply}</span>`;
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.innerHTML = '📋';
-            copyBtn.dataset.copyValue = data.reply;
-            copyBtn.onclick = function() { window.copyToClipboard(this.dataset.copyValue, this); };
+            copyBtn.onclick = function() { window.copyToClipboard(data.reply, this); };
             bDiv.appendChild(copyBtn);
         } else {
             bDiv.innerText = "Harsh GPT: I'm speechless (API Error).";
@@ -125,8 +124,7 @@ async function handleSend() {
         if (uId !== "guest") loadHistory(uId);
 
     } catch (err) {
-        bDiv.innerText = "Harsh GPT: I'm speechless (literally, something went wrong).";
-        console.error("Chat Error:", err);
+        if (bDiv) bDiv.innerText = "Harsh GPT: I'm speechless (literally, something went wrong).";
     }
 }
 
@@ -158,9 +156,8 @@ window.closeSettings = () => document.getElementById('settings-modal').classList
 window.setTheme = (theme) => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('harsh-gpt-theme', theme); };
 window.setFont = (fontClass) => { document.body.className = fontClass; localStorage.setItem('harsh-gpt-font', fontClass); };
 
-// --- 7. AUTH & HISTORY ---
+// --- 7. AUTH & HISTORY (Unified Greeting Fix) ---
 if (_sbClient) {
-    // Logic for Google Login
     loginBtn.onclick = async () => { 
         await _sbClient.auth.signInWithOAuth({ 
             provider: 'google', 
@@ -168,7 +165,6 @@ if (_sbClient) {
         }); 
     };
 
-    // Logic for Logout with confirmation
     window.handleLogout = async () => { 
         if (confirm("Do you want to logout?")) { 
             await _sbClient.auth.signOut(); 
@@ -176,41 +172,28 @@ if (_sbClient) {
         } 
     };
 
-    // Monitor Auth State Changes
     _sbClient.auth.onAuthStateChange(async (event, session) => {
+        // Clear container to prevent double messages during login/logout
+        chatContainer.innerHTML = ''; 
+
         if (session) {
-            // User is logged in
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
-            
-            // FIX: Clear the "Please login" greeting before showing user content
-            chatContainer.innerHTML = ''; 
-            
             appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
             loadHistory(session.user.id);
         } else {
-            // User is logged out
             loginBtn.style.display = 'block';
             accountBtn.style.display = 'none';
             if (menuBtn) menuBtn.style.display = 'none';
-            
-            // Show the default guest greeting
-            chatContainer.innerHTML = '';
             appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
         }
     });
 }
 
-// Function to fetch and display the last 10 chat items
 async function loadHistory(uId) {
     if (!historyList || !_sbClient) return;
-    const { data } = await _sbClient
-        .from('chats')
-        .select('*')
-        .eq('user_id', uId)
-        .order('created_at', { ascending: false })
-        .limit(10);
+    const { data } = await _sbClient.from('chats').select('*').eq('user_id', uId).order('created_at', { ascending: false }).limit(10);
 
     if (data && data.length > 0) {
         historyList.innerHTML = data.map(chat => `
@@ -223,7 +206,6 @@ async function loadHistory(uId) {
     }
 }
 
-// Function to display a specific chat from history
 window.viewPastChat = (uMsg, bRes) => {
     chatContainer.innerHTML = '';
     appendMessage('user', uMsg);
@@ -231,99 +213,17 @@ window.viewPastChat = (uMsg, bRes) => {
     document.getElementById('sidebar').classList.remove('sidebar-open');
 };
 
-// --- 8. CHAT LOGIC ---
-async function handleSend() {
-    const message = userInput.value.trim();
-    const imageFile = imgInput.files[0];
-    
-    // Safety check: Exit if no input at all
-    if (!message && !imageFile) return;
-
-    // 1. Display User message + local image preview immediately
-    appendMessage('user', message, imageFile);
-    
-    // Clear the input fields and preview UI right away
-    const currentMsg = message;
-    userInput.value = "";
-    imgInput.value = "";
-    if (previewBox) previewBox.style.display = "none";
-
-    // 2. Create the "thinking" bubble
-    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
-
-    try {
-        let uId = "guest";
-        let imageUrl = null;
-
-        // Fetch user ID for storage and history
-        if (_sbClient) {
-            const { data: { user } } = await _sbClient.auth.getUser();
-            if (user) uId = user.id;
-        }
-
-        // 3. Upload Image to Supabase Storage if one exists
-        if (imageFile && _sbClient) {
-            const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
-            const { error: uploadError } = await _sbClient.storage
-                .from('chat-images')
-                .upload(fileName, imageFile);
-            
-            if (!uploadError) {
-                const { data: { publicUrl } } = _sbClient.storage
-                    .from('chat-images')
-                    .getPublicUrl(fileName);
-                imageUrl = publicUrl;
-            } else {
-                console.error("Upload error:", uploadError.message);
-            }
-        }
-
-        // 4. Send payload to your API
-        const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                message: currentMsg || "Analyze this image.", 
-                userId: uId, 
-                imageUrl: imageUrl 
-            })
-        });
-        
-        const data = await res.json();
-        
-        // 5. Replace "Thinking" text with real reply + Copy Button
-        if (bDiv) {
-            bDiv.innerHTML = `<span>${data.reply}</span>`;
-            
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn';
-            copyBtn.innerHTML = '📋';
-            copyBtn.dataset.copyValue = data.reply; // Store text inside the button
-            copyBtn.onclick = function() { 
-                window.copyToClipboard(this.dataset.copyValue, this); 
-            };
-            bDiv.appendChild(copyBtn);
-        }
-
-        // Refresh sidebar history if user is logged in
-        if (uId !== "guest") loadHistory(uId);
-
-    } catch (err) {
-        // If the API crashes or connection drops
-        if (bDiv) {
-            bDiv.innerText = "Harsh GPT: I'm speechless (literally, something went wrong).";
-        }
-        console.error("Chat Error:", err);
-    }
-}
-
 // --- 8. MIC & KILL SWITCH ---
 if (voiceBtn) {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         voiceBtn.onclick = () => { recognition.start(); voiceBtn.textContent = "🛑"; };
-        recognition.onresult = (e) => { userInput.value = e.results[0][0].transcript; voiceBtn.textContent = "🎤"; handleSend(); };
+        recognition.onresult = (e) => { 
+            userInput.value = e.results[0][0].transcript; 
+            voiceBtn.textContent = "🎤"; 
+            handleSend(); 
+        };
         recognition.onend = () => { voiceBtn.textContent = "🎤"; };
     }
 }
@@ -339,14 +239,10 @@ window.handleKillSwitch = async () => {
 };
 
 // --- 9. INITIALIZATION ---
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', () => {
     window.setTheme(localStorage.getItem('harsh-gpt-theme') || 'antariksh');
     window.setFont(localStorage.getItem('harsh-gpt-font') || 'font-default');
-    if (_sbClient) {
-        const { data: { user } } = await _sbClient.auth.getUser();
-        if (user) appendMessage('bot', `Welcome back, ${user.user_metadata.full_name || 'User'}! 👋`);
-        else appendMessage('bot', "Hello 👋 I’m Harsh GPT. Login for permanent memory!");
-    }
+    // Note: Greeting is now handled strictly by onAuthStateChange to prevent duplicates
 });
 
 if (sendBtn) sendBtn.onclick = handleSend;
