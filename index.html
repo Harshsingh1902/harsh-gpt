@@ -10,7 +10,7 @@
 </head>
 <body class="font-default">
 
-    <div id="sidebar">
+    <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <button class="home-menu-btn" onclick="goHome()">🏠 Home</button>
             <button class="new-chat-btn" onclick="startNewChat()">+ New Chat</button>
@@ -25,10 +25,10 @@
         </div>
 
         <div class="sidebar-footer">
+            <button class="footer-btn" onclick="triggerHarshInbox()">📧 Scan My Inbox</button>
             <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
         </div>
     </div>
-
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -113,15 +113,9 @@
             </div>
         </footer>
     </div>
-<script src="harsh-gmail.js" defer></script>
 
-<script src="script.js" defer></script>
-
-<div id="sidebar" class="sidebar">
-    <div class="menu-item" onclick="triggerHarshInbox()">
-        <span>📧</span> Scan My Inbox
-    </div>
-</div>
+    <script src="harsh-gmail.js" defer></script>
+    <script src="script.js" defer></script>
 
 </body>
 </html>

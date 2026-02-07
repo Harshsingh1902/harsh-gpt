@@ -641,3 +641,25 @@ input {
 #sidebar .menu-item span {
     font-size: 1.2rem;
 }
+
+/* Styling for the Gmail button in the sidebar footer */
+.sidebar-footer .footer-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px; /* Space between Gmail and Settings */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sidebar-footer .footer-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
