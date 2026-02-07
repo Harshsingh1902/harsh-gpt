@@ -177,8 +177,9 @@ window.closeSettings = () => document.getElementById('settings-modal').classList
 window.setTheme = (theme) => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('harsh-gpt-theme', theme); };
 window.setFont = (fontClass) => { document.body.className = fontClass; localStorage.setItem('harsh-gpt-font', fontClass); };
 
-// --- 7. AUTH & HISTORY (Improved Stability) ---
+// --- 7. AUTH, HISTORY & NAVIGATION ---
 if (_sbClient) {
+    // Logic for Google Login
     loginBtn.onclick = async (e) => { 
         e.preventDefault();
         const { error } = await _sbClient.auth.signInWithOAuth({ 
@@ -188,24 +189,43 @@ if (_sbClient) {
         if (error) console.error("Login Error:", error.message);
     };
 
+    // Logic for Logout
     window.handleLogout = async () => { 
         if (confirm("Do you want to logout?")) { 
             await _sbClient.auth.signOut(); 
-            // Don't reload manually, let onAuthStateChange handle it
+            window.location.reload(); 
         } 
     };
 
+    // NAVIGATION FUNCTIONS
+    window.startNewChat = () => {
+        chatContainer.innerHTML = '';
+        _sbClient.auth.getSession().then(({data: {session}}) => {
+            if (session) {
+                appendMessage('bot', `New Chat Started. How can I help, ${session.user.user_metadata.full_name || 'User'}?`);
+            } else {
+                appendMessage('bot', "Hello 👋 I’m Harsh GPT. Login for permanent memory!");
+            }
+        });
+        if (document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('sidebar-open');
+    };
+
+    window.goHome = () => {
+        window.location.reload();
+    };
+
+    // MONITOR AUTH STATE (Fixes Permanent Memory Message)
     _sbClient.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth Event:", event); // Check your console for this!
+        console.log("Auth Event:", event);
         
-        // Prevent clearing the screen if the event is just a token refresh
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-            chatContainer.innerHTML = ''; 
+            chatContainer.innerHTML = ''; // Wipes the "Guest" greeting immediately
 
             if (session) {
                 loginBtn.style.display = 'none';
                 accountBtn.style.display = 'block';
                 if (menuBtn) menuBtn.style.display = 'block';
+                
                 appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
                 loadHistory(session.user.id);
             } else {
@@ -218,9 +238,43 @@ if (_sbClient) {
     });
 }
 
-// --- 8. CHAT LOGIC (Abortion Prevention) ---
+// FETCH HISTORY
+async function loadHistory(uId) {
+    if (!historyList || !_sbClient) return;
+    const { data, error } = await _sbClient
+        .from('chats')
+        .select('*')
+        .eq('user_id', uId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (error) {
+        console.error("History Error:", error.message);
+        return;
+    }
+
+    if (data && data.length > 0) {
+        historyList.innerHTML = data.map(chat => `
+            <div class="history-item" onclick="viewPastChat(\`${chat.user_message.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${chat.bot_response ? chat.bot_response.replace(/`/g, '\\`').replace(/\$/g, '\\$') : '...'}\`)">
+                💬 ${chat.user_message.substring(0, 25)}...
+            </div>
+        `).join('');
+    } else {
+        historyList.innerHTML = '<p class="empty-history">No history yet</p>';
+    }
+}
+
+// VIEW PAST CHAT
+window.viewPastChat = (uMsg, bRes) => {
+    chatContainer.innerHTML = '';
+    appendMessage('user', uMsg);
+    appendMessage('bot', bRes);
+    if (document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('sidebar-open');
+};
+
+// --- 8. CHAT LOGIC (Integrated History Saving) ---
 async function handleSend(e) {
-    if (e) e.preventDefault(); // Prevents page refresh which causes "aborted" error
+    if (e) e.preventDefault(); 
 
     const message = userInput.value.trim();
     const imageFile = imgInput ? imgInput.files[0] : null;
@@ -239,7 +293,6 @@ async function handleSend(e) {
         let uId = "guest";
         let imageUrl = null;
 
-        // Get session safely
         const { data: { session } } = await _sbClient.auth.getSession();
         if (session) uId = session.user.id;
 
@@ -251,14 +304,13 @@ async function handleSend(e) {
             }
         }
 
-        // Added a timeout controller to prevent infinite hanging
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s limit
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s for stability
 
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message, userId: uId, imageUrl }),
+            body: JSON.stringify({ message: message || "Analyze image", userId: uId, imageUrl }),
             signal: controller.signal
         });
         
@@ -271,6 +323,9 @@ async function handleSend(e) {
             copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋';
             copyBtn.onclick = () => window.copyToClipboard(data.reply, copyBtn);
             bDiv.appendChild(copyBtn);
+            
+            // CRITICAL: Refresh history so the new chat shows up in sidebar
+            if (uId !== "guest") loadHistory(uId);
         } else {
             bDiv.innerText = "Harsh GPT: API returned no response.";
         }
