@@ -145,14 +145,37 @@ if (voiceBtn) {
 // 5. CHAT LOGIC
 async function handleSend() {
     const message = userInput.value.trim();
-    if (!message) return;
+    const imageFile = document.getElementById('imageInput').files[0];
+    
+    // 1. Validation: Don't send if both are empty
+    if (!message && !imageFile) return;
 
+    // 2. Create User Message UI
     const uDiv = document.createElement("div");
     uDiv.className = "message user";
-    uDiv.textContent = message;
+    
+    // If there's an image, show it in the chat bubble
+    if (imageFile) {
+        const imgPreview = document.createElement("img");
+        imgPreview.src = URL.createObjectURL(imageFile);
+        imgPreview.style.maxWidth = "200px";
+        imgPreview.style.borderRadius = "8px";
+        imgPreview.style.display = "block";
+        imgPreview.style.marginBottom = "8px";
+        uDiv.appendChild(imgPreview);
+    }
+    
+    const textSpan = document.createElement("span");
+    textSpan.textContent = message || (imageFile ? "Sent an image." : "");
+    uDiv.appendChild(textSpan);
     chatContainer.appendChild(uDiv);
-    userInput.value = "";
 
+    // 3. Clear Inputs & Preview
+    userInput.value = "";
+    document.getElementById('imageInput').value = "";
+    document.getElementById('imagePreviewBox').style.display = "none";
+
+    // 4. Show Bot Thinking
     const bDiv = document.createElement("div");
     bDiv.className = "message bot";
     bDiv.textContent = "Harsh GPT is thinking..."; 
@@ -161,15 +184,39 @@ async function handleSend() {
 
     try {
         let uId = "guest";
+        let imageUrl = null;
+
+        // 5. Identify User
         if (_sbClient) {
             const { data: { user } } = await _sbClient.auth.getUser();
             if (user) uId = user.id;
         }
 
+        // 6. Handle Image Upload to Supabase
+        if (imageFile && _sbClient) {
+            const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
+            const { data, error } = await _sbClient.storage
+                .from('chat-images')
+                .upload(fileName, imageFile);
+
+            if (error) throw new Error("Upload failed: " + error.message);
+
+            const { data: { publicUrl } } = _sbClient.storage
+                .from('chat-images')
+                .getPublicUrl(fileName);
+            
+            imageUrl = publicUrl;
+        }
+
+        // 7. Call API with Message + Image URL
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message, userId: uId })
+            body: JSON.stringify({ 
+                message: message || "Analyze this image.", 
+                userId: uId,
+                imageUrl: imageUrl // This goes to your backend
+            })
         });
         
         const data = await res.json();
@@ -178,7 +225,8 @@ async function handleSend() {
         if (uId !== "guest") loadHistory(uId);
         
     } catch (err) {
-        bDiv.textContent = "Harsh GPT: Error - Check connection.";
+        console.error(err);
+        bDiv.textContent = "Harsh GPT: " + err.message;
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
