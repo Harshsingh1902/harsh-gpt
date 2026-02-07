@@ -375,3 +375,42 @@ input {
     border-radius: 8px;
     font-weight: 600;
 }
+
+/* --- COPY BUTTON STYLING --- */
+
+/* 1. Make the bot bubble a 'container' for the button */
+.message.bot {
+    position: relative; 
+    padding-right: 40px; /* Space so text doesn't hit the button */
+    min-height: 40px;
+    user-select: text !important; /* Ensures text is actually highlight-able */
+}
+
+/* 2. Style the button itself */
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+    padding: 4px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 3. Hover effect */
+.copy-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* 4. Visual feedback when clicked */
+.copy-btn:active {
+    transform: scale(0.9);
+}

@@ -3,6 +3,50 @@ const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
+// --- 2. UTILITY FUNCTIONS (Add Copy logic here) ---
+function copyToClipboard(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "Done! ✅";
+        btn.style.color = "#00ff88"; // Optional: turn it green
+        setTimeout(() => { 
+            btn.innerHTML = originalText; 
+            btn.style.color = ""; // Reset color
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+🛠️ Part 2: Update your appendMessage Function
+Now, scroll down in your script.js until you find the function that adds messages to the screen (it's likely called appendMessage or something similar).
+
+Replace that function with this updated version:
+
+JavaScript
+function appendMessage(role, text) {
+    const chatContainer = document.getElementById('chatContainer');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${role}`;
+
+    // Create a container for the text
+    const textSpan = document.createElement('span');
+    textSpan.innerText = text;
+    msgDiv.appendChild(textSpan);
+
+    // ONLY add the copy button if it's the BOT responding
+    if (role === 'bot') {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'copy-btn';
+        copyBtn.innerHTML = '📋'; // Or use "Copy"
+        copyBtn.title = "Copy message";
+        copyBtn.onclick = () => copyToClipboard(text, copyBtn);
+        msgDiv.appendChild(copyBtn);
+    }
+
+    chatContainer.appendChild(msgDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
 // DOM Elements
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
