@@ -1,4 +1,4 @@
-// 1. CONFIGURATION & INITIALIZATION
+// --- 1. CONFIGURATION & INITIALIZATION ---
 const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
@@ -13,7 +13,37 @@ const accountBtn = document.getElementById("accountBtn");
 const menuBtn = document.getElementById("menuBtn");
 const historyList = document.getElementById("chat-history-list");
 
-// 2. PREMIUM UI LOGIC
+// Image Preview Elements
+const imgInput = document.getElementById('imageInput');
+const previewBox = document.getElementById('imagePreviewBox');
+const previewImg = document.getElementById('previewImg');
+const fileNameSpan = document.getElementById('fileName');
+const cancelBtn = document.getElementById('cancelImg');
+
+// --- 2. IMAGE PREVIEW LOGIC (NEW) ---
+imgInput.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewImg.src = e.target.result;
+            fileNameSpan.textContent = file.name;
+            // Force the preview box to show as flex
+            previewBox.style.display = 'flex'; 
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Cancel Image Selection
+if (cancelBtn) {
+    cancelBtn.onclick = () => {
+        imgInput.value = ""; 
+        previewBox.style.display = 'none'; // Hide the preview box
+    };
+}
+
+// --- 3. PREMIUM UI LOGIC ---
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('sidebar-open');
 }
@@ -39,7 +69,6 @@ function setFont(fontClass) {
     localStorage.setItem('harsh-gpt-font', fontClass);
 }
 
-// INTEGRATED: Login-aware Home Logic
 function goHome() {
     _sbClient.auth.getUser().then(({ data: { user } }) => {
         if (user) {
@@ -56,7 +85,7 @@ function startNewChat() {
     document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
-// 3. AUTH & HISTORY
+// --- 4. AUTH & HISTORY ---
 if (_sbClient) {
     loginBtn.onclick = async () => {
         await _sbClient.auth.signInWithOAuth({
@@ -78,16 +107,12 @@ if (_sbClient) {
             loginBtn.style.display = 'none';
             accountBtn.style.display = 'block';
             if (menuBtn) menuBtn.style.display = 'block';
-            
-            // Update message immediately on state change
             chatContainer.innerHTML = `<div class="message bot">Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋 Your permanent memory is now active.</div>`;
-            
             loadHistory(session.user.id);
         } else {
             loginBtn.style.display = 'block';
             accountBtn.style.display = 'none';
             if (menuBtn) menuBtn.style.display = 'none';
-            
             chatContainer.innerHTML = '<div class="message bot">Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!</div>';
         }
     });
@@ -121,40 +146,32 @@ function viewPastChat(uMsg, bRes) {
     document.getElementById('sidebar').classList.remove('sidebar-open');
 }
 
-// 4. MIC LOGIC
+// --- 5. MIC LOGIC ---
 if (voiceBtn) {
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    
     voiceBtn.onclick = () => {
-        voiceBtn.style.background = "transparent"; 
         recognition.start();
         voiceBtn.textContent = "🛑";
     };
-    
     recognition.onresult = (e) => {
         userInput.value = e.results[0][0].transcript;
         voiceBtn.textContent = "🎤";
         handleSend();
     };
-    
-    recognition.onend = () => { 
-        voiceBtn.textContent = "🎤"; 
-    };
+    recognition.onend = () => { voiceBtn.textContent = "🎤"; };
 }
 
-// 5. CHAT LOGIC
+// --- 6. CHAT LOGIC ---
 async function handleSend() {
     const message = userInput.value.trim();
-    const imageFile = document.getElementById('imageInput').files[0];
+    const imageFile = imgInput.files[0];
     
-    // 1. Validation: Don't send if both are empty
     if (!message && !imageFile) return;
 
-    // 2. Create User Message UI
+    // UI: Create User Message bubble
     const uDiv = document.createElement("div");
     uDiv.className = "message user";
     
-    // If there's an image, show it in the chat bubble
     if (imageFile) {
         const imgPreview = document.createElement("img");
         imgPreview.src = URL.createObjectURL(imageFile);
@@ -170,12 +187,12 @@ async function handleSend() {
     uDiv.appendChild(textSpan);
     chatContainer.appendChild(uDiv);
 
-    // 3. Clear Inputs & Preview
+    // RESET: Clear input and hide the preview bar
     userInput.value = "";
-    document.getElementById('imageInput').value = "";
-    document.getElementById('imagePreviewBox').style.display = "none";
+    imgInput.value = "";
+    previewBox.style.display = "none";
 
-    // 4. Show Bot Thinking
+    // UI: Bot Thinking
     const bDiv = document.createElement("div");
     bDiv.className = "message bot";
     bDiv.textContent = "Harsh GPT is thinking..."; 
@@ -186,13 +203,12 @@ async function handleSend() {
         let uId = "guest";
         let imageUrl = null;
 
-        // 5. Identify User
         if (_sbClient) {
             const { data: { user } } = await _sbClient.auth.getUser();
             if (user) uId = user.id;
         }
 
-        // 6. Handle Image Upload to Supabase
+        // Upload to Supabase Storage
         if (imageFile && _sbClient) {
             const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
             const { data, error } = await _sbClient.storage
@@ -208,14 +224,14 @@ async function handleSend() {
             imageUrl = publicUrl;
         }
 
-        // 7. Call API with Message + Image URL
+        // API Call
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 message: message || "Analyze this image.", 
                 userId: uId,
-                imageUrl: imageUrl // This goes to your backend
+                imageUrl: imageUrl 
             })
         });
         
@@ -226,19 +242,18 @@ async function handleSend() {
         
     } catch (err) {
         console.error(err);
-        bDiv.textContent = "Harsh GPT: " + err.message;
+        bDiv.textContent = "Harsh GPT Error: " + err.message;
     }
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-// 6. INTEGRATED INITIALIZATION
+// --- 7. INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', async () => {
     const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
     const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
     setTheme(savedTheme);
     setFont(savedFont);
 
-    // Ensure correct welcome message on initial load
     if (_sbClient) {
         const { data: { user } } = await _sbClient.auth.getUser();
         if (user) {
