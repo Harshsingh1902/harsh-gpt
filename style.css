@@ -376,60 +376,49 @@ input {
     font-weight: 600;
 }
 
-/* --- COPY BUTTON STYLING --- */
+/* --- CLEANED COPY BUTTON STYLING --- */
 
-/* 1. Make the bot bubble a 'container' for the button */
+/* 1. The Bot Bubble Container */
 .message.bot {
     position: relative; 
-    padding-right: 40px; /* Space so text doesn't hit the button */
-    min-height: 40px;
-    user-select: text !important; /* Ensures text is actually highlight-able */
+    padding-right: 45px !important; /* Extra space for the button */
+    min-height: 45px;
+    user-select: text !important;
 }
 
-/* 2. Style the button itself */
+/* 2. The Button - Single Block to avoid conflicts */
 .copy-btn {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    border-radius: 5px;
-    color: #fff;
-    font-size: 14px;
-    padding: 4px 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* 3. Hover effect */
-.copy-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-}
-
-/* 4. Visual feedback when clicked */
-.copy-btn:active {
-    transform: scale(0.9);
-}
-
-.copy-btn {
-    -webkit-appearance: none; /* Keep this if you want to strip defaults */
-    appearance: none;
     
-    /* ADD THESE TO MAKE IT WORK */
+    /* Look & Feel */
     background: rgba(255, 255, 255, 0.2) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     color: white !important;
-    padding: 5px 10px !important;
-    border-radius: 5px !important;
+    padding: 4px 8px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    
+    /* Functionality */
     cursor: pointer !important;
-    z-index: 10 !important; /* Ensures it sits above the bubble text */
-    display: inline-block !important;
+    z-index: 99 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    
+    /* This fixes the yellow warning icon */
+    appearance: none; 
+}
+
+/* 3. States */
+.copy-btn:hover {
+    background: rgba(255, 255, 255, 0.4) !important;
+    transform: scale(1.05);
 }
 
 .copy-btn:active {
-    background: rgba(255, 255, 255, 0.5) !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+    transform: scale(0.95);
 }
