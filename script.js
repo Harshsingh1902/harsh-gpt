@@ -18,7 +18,8 @@ function appendMessage(role, text, imageFile = null) {
     if (!chatContainer) return null;
 
     const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${role}`;
+    msgDiv.className = `message ${role}`; 
+    if (role === 'bot') msgDiv.classList.add('harsh-message');
 
     // Fix: Handle Image Display (Instant local preview or URL)
     if (imageFile) {
@@ -129,7 +130,14 @@ async function handleSend() {
         
         // 5. Finalize Bot Response
         if (data && data.reply) {
-            bDiv.innerHTML = `<span>${data.reply}</span>`;
+
+            if(data.reply)
+                {
+                    bDiv.classList.add('harsh-message'); // Ensure the class is here
+                    bDiv.innerHTML = `<span>${data.reply}</span>`;
+                }
+
+            //bDiv.innerHTML = `<span>${data.reply}</span>`;
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.innerHTML = '📋';
@@ -410,7 +418,22 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
-
+// --- 10. HARSH VOICE INITIALIZATION ---
+window.addEventListener('load', () => {
+    if (typeof HarshVoice !== 'undefined') {
+        // Initialize watching the chatContainer
+        HarshVoice.init('chatContainer');
+        
+        // If a user is already logged in, get their voice preference from Supabase
+        if (_sbClient) {
+            _sbClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_IN') {
+                    HarshVoice.loadPreference();
+                }
+            });
+        }
+    }
+});
 // --- GLOBAL EVENT LISTENERS ---
 
 // 1. Click Listener

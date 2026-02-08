@@ -29,6 +29,7 @@
             <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
         </div>
     </div>
+
     <div id="settings-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -52,6 +53,11 @@
                     <option value="font-whatsapp">WhatsApp Style</option>
                     <option value="font-modern">Modern (Poppins)</option>
                 </select>
+            </div>
+
+            <div class="setting-group voice-setting" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-top: 10px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);">
+                <label style="margin: 0; font-size: 14px; color: #eee;">🔊 Harsh Voice (Read Aloud)</label>
+                <button id="voice-toggle" class="toggle-btn" style="padding: 6px 18px; border-radius: 20px; border: 1px solid #555; background: #1a1a1a; color: white; cursor: pointer; transition: 0.3s; font-size: 12px; font-weight: 600;">OFF</button>
             </div>
 
             <div class="setting-group">
@@ -115,6 +121,7 @@
     </div>
 
     <script src="harsh-gmail.js" defer></script>
+    <script src="harsh-voice.js" defer></script>
     <script src="script.js" defer></script>
 
 </body>
