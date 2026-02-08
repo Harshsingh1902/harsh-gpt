@@ -337,10 +337,15 @@ async function handleSend(e) {
         
         if (data.reply) {
             bDiv.innerHTML = `<span>${data.reply}</span>`;
+            bDiv.classList.add('harsh-message'); 
+            
+            // 3. Add the copy button (HarshVoice will now ignore this button)
             const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn'; copyBtn.innerHTML = '📋';
+            copyBtn.className = 'copy-btn'; 
+            copyBtn.innerHTML = '📋';
             copyBtn.onclick = () => window.copyToClipboard(data.reply, copyBtn);
             bDiv.appendChild(copyBtn);
+            
             
             // CRITICAL: Refresh history so the new chat shows up in sidebar
             if (uId !== "guest") loadHistory(uId);

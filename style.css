@@ -663,3 +663,33 @@ input {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
 }
+
+/* --- Harsh Voice Toggle Styles --- */
+
+/* The default 'OFF' state */
+.toggle-btn {
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* The 'ON' state (Active) */
+.toggle-btn.active {
+    background: #ff4b2b !important; /* Harsh's Signature Red */
+    border-color: #ff4b2b !important;
+    color: white !important;
+    font-weight: bold;
+    box-shadow: 0 0 12px rgba(255, 75, 43, 0.5);
+    transform: scale(1.05); /* Slight pop effect */
+}
+
+/* Hover effect to make it feel interactive */
+.toggle-btn:hover {
+    filter: brightness(1.2);
+    border-color: #ff4b2b;
+}
+
+/* Optional: Add a small speaker icon animation when active */
+.toggle-btn.active::before {
+    content: "🔊 ";
+    font-size: 10px;
+}
