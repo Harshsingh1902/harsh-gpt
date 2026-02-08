@@ -84,25 +84,27 @@ const HarshVoice = {
 
         const observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    // Check if node is an element and has the trigger class
-                    if (node.nodeType === 1 && node.classList.contains('harsh-message')) {
-                        
-                        // PRECISION PICKUP: Only read the <span> content if it exists
-                        // This prevents reading the 📋 button or "thinking" placeholder
+             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    const node = mutation.target;
+                    if (node.classList.contains('harsh-message') && !node.dataset.spoken) {
                         const textSpan = node.querySelector('span');
                         const textToSpeak = textSpan ? textSpan.innerText : node.innerText;
                         
-                        // We check if it's still "thinking" to avoid talking too early
                         if (!textToSpeak.includes("thinking...")) {
-                             HarshVoice.speak(textToSpeak);
+                            node.dataset.spoken = "true"; // Prevent double-reading
+                            HarshVoice.speak(textToSpeak);
                         }
                     }
-                });
+                }
             });
-        });
+        });  
 
-        observer.observe(chatContainer, { childList: true, subtree: true });
+        observer.observe(chatContainer, { 
+            childList: true, 
+            subtree: true,
+            attributes: true, 
+            attributeFilter: ['class']
+         });
     }
 };
 

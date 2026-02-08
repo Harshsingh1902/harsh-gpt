@@ -337,7 +337,14 @@ async function handleSend(e) {
         
         if (data.reply) {
             bDiv.innerHTML = `<span>${data.reply}</span>`;
-            bDiv.classList.add('harsh-message'); 
+            bDiv.classList.add('harsh-message');
+            
+            if (typeof HarshVoice !== 'undefined' && HarshVoice.isEnabled) {
+                // We target the clean reply text directly
+                HarshVoice.speak(data.reply);
+                }
+
+                
             
             // 3. Add the copy button (HarshVoice will now ignore this button)
             const copyBtn = document.createElement('button');
