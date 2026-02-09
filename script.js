@@ -65,14 +65,22 @@ const previewBox = document.getElementById('imagePreviewBox');
 const previewImg = document.getElementById('previewImg');
 const fileNameSpan = document.getElementById('fileName');
 const cancelBtn = document.getElementById('cancelImg');
+const zerodhaSidebarBtn = document.getElementById("zerodha-sidebar-btn"); // Added for Sidebar
 
-// --- 5. CHAT LOGIC (Fixed & Debugged) ---
-async function handleSend() {
+// --- 5. CHAT LOGIC (Unified & Portfolio Aware) ---
+// Note: We are using ONE single handleSend to prevent "red bar" duplicate errors
+async function handleSend(e) {
+    if (e) e.preventDefault(); 
+
     const message = userInput.value.trim();
     const imageFile = imgInput ? imgInput.files[0] : null;
     
     // Safety check
     if (!message && !imageFile) return;
+
+    // --- NEW: GRAB PORTFOLIO DATA FROM STORAGE ---
+    const rawPortfolio = localStorage.getItem('zerodha_portfolio');
+    const portfolioData = rawPortfolio ? JSON.parse(rawPortfolio) : null;
 
     // 1. User Message (Immediate UI Update)
     appendMessage('user', message, imageFile);
@@ -91,8 +99,8 @@ async function handleSend() {
 
         // Securely get the user session
         if (_sbClient) {
-            const { data: { user } } = await _sbClient.auth.getUser();
-            if (user) uId = user.id;
+            const { data: { session } } = await _sbClient.auth.getSession();
+            if (session) uId = session.user.id;
         }
 
         // 3. Image Upload (Only if logged in)
@@ -113,46 +121,53 @@ async function handleSend() {
         }
 
         // 4. API Request
-        // IMPORTANT: Ensure your backend is running at this URL
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45000);
+
         const res = await fetch("/api/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 message: message || "Analyze this image.", 
                 userId: uId, 
-                imageUrl: imageUrl 
-            })
+                imageUrl: imageUrl,
+                portfolioData: portfolioData // Added Portfolio Context
+            }),
+            signal: controller.signal
         });
         
+        clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         
         const data = await res.json();
         
         // 5. Finalize Bot Response
         if (data && data.reply) {
+            bDiv.classList.add('harsh-message');
+            bDiv.innerHTML = `<span>${data.reply}</span>`;
 
-            if(data.reply)
-                {
-                    bDiv.classList.add('harsh-message'); // Ensure the class is here
-                    bDiv.innerHTML = `<span>${data.reply}</span>`;
-                }
+            // Voice Support
+            if (typeof HarshVoice !== 'undefined' && HarshVoice.isEnabled) {
+                HarshVoice.speak(data.reply);
+            }
 
-            //bDiv.innerHTML = `<span>${data.reply}</span>`;
+            // Copy Button
             const copyBtn = document.createElement('button');
             copyBtn.className = 'copy-btn';
             copyBtn.innerHTML = '📋';
             copyBtn.onclick = function() { window.copyToClipboard(data.reply, this); };
             bDiv.appendChild(copyBtn);
+            
+            // Refresh History
+            if (uId !== "guest") loadHistory(uId);
         } else {
-            bDiv.innerText = "Harsh GPT: I'm speechless (Empty response from brain).";
+            bDiv.innerText = "Harsh GPT: I'm speechless (Empty response).";
         }
-        
-        if (uId !== "guest") loadHistory(uId);
 
     } catch (err) {
         console.error("DETAILED CHAT ERROR:", err);
         if (bDiv) {
-            bDiv.innerText = `Harsh GPT: I'm speechless. (Error: ${err.message})`;
+            bDiv.innerText = `Harsh GPT: Error - ${err.name === 'AbortError' ? 'Request timed out' : err.message}`;
         }
     }
 }
@@ -186,28 +201,20 @@ window.setTheme = (theme) => { document.documentElement.setAttribute('data-theme
 window.setFont = (fontClass) => { document.body.className = fontClass; localStorage.setItem('harsh-gpt-font', fontClass); };
 
 // --- 7. AUTH, HISTORY & NAVIGATION ---
-// --- 7. AUTH, HISTORY & NAVIGATION ---
 if (_sbClient) {
-    // Logic for Google Login
     loginBtn.onclick = async (e) => { 
         e.preventDefault();
         const { error } = await _sbClient.auth.signInWithOAuth({ 
             provider: 'google', 
             options: { 
                 scopes: 'https://www.googleapis.com/auth/gmail.readonly', 
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'select_account consent'
-                },
+                queryParams: { access_type: 'offline', prompt: 'select_account consent' },
                 redirectTo: window.location.origin 
             } 
         }); 
         if (error) console.error("Login Error:", error.message);
     };
 
-    // ... (rest of your logout and navigation logic stays exactly the same)
-
-    // Logic for Logout
     window.handleLogout = async () => { 
         if (confirm("Do you want to logout?")) { 
             await _sbClient.auth.signOut(); 
@@ -215,7 +222,6 @@ if (_sbClient) {
         } 
     };
 
-    // NAVIGATION FUNCTIONS
     window.startNewChat = () => {
         chatContainer.innerHTML = '';
         _sbClient.auth.getSession().then(({data: {session}}) => {
@@ -228,22 +234,15 @@ if (_sbClient) {
         if (document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('sidebar-open');
     };
 
-    window.goHome = () => {
-        window.location.reload();
-    };
+    window.goHome = () => { window.location.reload(); };
 
-    // MONITOR AUTH STATE (Fixes Permanent Memory Message)
     _sbClient.auth.onAuthStateChange(async (event, session) => {
-        console.log("Auth Event:", event);
-        
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'INITIAL_SESSION') {
-            chatContainer.innerHTML = ''; // Wipes the "Guest" greeting immediately
-
+            chatContainer.innerHTML = '';
             if (session) {
                 loginBtn.style.display = 'none';
                 accountBtn.style.display = 'block';
                 if (menuBtn) menuBtn.style.display = 'block';
-                
                 appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
                 loadHistory(session.user.id);
             } else {
@@ -256,7 +255,6 @@ if (_sbClient) {
     });
 }
 
-// FETCH HISTORY
 async function loadHistory(uId) {
     if (!historyList || !_sbClient) return;
     const { data, error } = await _sbClient
@@ -266,10 +264,7 @@ async function loadHistory(uId) {
         .order('created_at', { ascending: false })
         .limit(10);
 
-    if (error) {
-        console.error("History Error:", error.message);
-        return;
-    }
+    if (error) return;
 
     if (data && data.length > 0) {
         historyList.innerHTML = data.map(chat => `
@@ -282,89 +277,12 @@ async function loadHistory(uId) {
     }
 }
 
-// VIEW PAST CHAT
 window.viewPastChat = (uMsg, bRes) => {
     chatContainer.innerHTML = '';
     appendMessage('user', uMsg);
     appendMessage('bot', bRes);
     if (document.getElementById('sidebar')) document.getElementById('sidebar').classList.remove('sidebar-open');
 };
-
-// --- 8. CHAT LOGIC (Integrated History Saving) ---
-async function handleSend(e) {
-    if (e) e.preventDefault(); 
-
-    const message = userInput.value.trim();
-    const imageFile = imgInput ? imgInput.files[0] : null;
-    
-    if (!message && !imageFile) return;
-
-    appendMessage('user', message, imageFile);
-    
-    userInput.value = "";
-    if (imgInput) imgInput.value = "";
-    if (previewBox) previewBox.style.display = "none";
-
-    const bDiv = appendMessage('bot', "Harsh GPT is thinking...");
-
-    try {
-        let uId = "guest";
-        let imageUrl = null;
-
-        const { data: { session } } = await _sbClient.auth.getSession();
-        if (session) uId = session.user.id;
-
-        if (imageFile && uId !== "guest") {
-            const fileName = `${uId}/${Date.now()}-${imageFile.name}`;
-            const { error: uploadError } = await _sbClient.storage.from('chat-images').upload(fileName, imageFile);
-            if (!uploadError) {
-                imageUrl = _sbClient.storage.from('chat-images').getPublicUrl(fileName).data.publicUrl;
-            }
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s for stability
-
-        const res = await fetch("/api/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: message || "Analyze image", userId: uId, imageUrl }),
-            signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        const data = await res.json();
-        
-        if (data.reply) {
-            bDiv.innerHTML = `<span>${data.reply}</span>`;
-            bDiv.classList.add('harsh-message');
-            
-            if (typeof HarshVoice !== 'undefined' && HarshVoice.isEnabled) {
-                // We target the clean reply text directly
-                HarshVoice.speak(data.reply);
-                }
-
-                
-            
-            // 3. Add the copy button (HarshVoice will now ignore this button)
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copy-btn'; 
-            copyBtn.innerHTML = '📋';
-            copyBtn.onclick = () => window.copyToClipboard(data.reply, copyBtn);
-            bDiv.appendChild(copyBtn);
-            
-            
-            // CRITICAL: Refresh history so the new chat shows up in sidebar
-            if (uId !== "guest") loadHistory(uId);
-        } else {
-            bDiv.innerText = "Harsh GPT: API returned no response.";
-        }
-
-    } catch (err) {
-        console.error("Full Error:", err);
-        bDiv.innerText = `Harsh GPT: Error - ${err.name === 'AbortError' ? 'Request timed out' : err.message}`;
-    }
-}
 
 // --- 8. MIC & KILL SWITCH ---
 if (voiceBtn) {
@@ -391,76 +309,79 @@ window.handleKillSwitch = async () => {
     }
 };
 
-// --- 9. INITIALIZATION ---
+// --- 9. INITIALIZATION & ZERODHA CALLBACKS ---
 window.addEventListener('DOMContentLoaded', async () => {
-    // 1. Set UI Preferences (Theme & Font)
+    // 1. Set UI Preferences
     const savedTheme = localStorage.getItem('harsh-gpt-theme') || 'antariksh';
     const savedFont = localStorage.getItem('harsh-gpt-font') || 'font-default';
-    
     if (window.setTheme) window.setTheme(savedTheme);
     if (window.setFont) window.setFont(savedFont);
 
-    // 2. The Login Fix: Manually capture the session on page load
+    // 2. Auth Session Capture
     if (_sbClient) {
         try {
-            // This is the "magic" line that reads the Google login token from the URL
-            const { data: { session }, error } = await _sbClient.auth.getSession();
-            
+            const { data: { session } } = await _sbClient.auth.getSession();
             if (session) {
-                console.log("Session detected for:", session.user.email);
-                
-                // Force UI to logged-in state
                 if (loginBtn) loginBtn.style.display = 'none';
                 if (accountBtn) accountBtn.style.display = 'block';
                 if (menuBtn) menuBtn.style.display = 'block';
-                
-                // Prevent double greetings: only greet if chat is empty
                 if (chatContainer && chatContainer.innerHTML.trim() === "") {
                     appendMessage('bot', `Welcome back, ${session.user.user_metadata.full_name || 'User'}! 👋`);
-                    if (typeof loadHistory === 'function') loadHistory(session.user.id);
-                }
-            } else {
-                console.log("No session found - Guest Mode.");
-                if (chatContainer && chatContainer.innerHTML.trim() === "") {
-                    appendMessage('bot', "Hello 👋 I’m Harsh GPT. Please login to enable permanent memory!");
+                    loadHistory(session.user.id);
                 }
             }
-        } catch (err) {
-            console.error("Initialization Auth Error:", err);
-        }
+        } catch (err) { console.error("Auth Init Error", err); }
+    }
+
+    // --- NEW: ZERODHA CALLBACK HANDLER ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestToken = urlParams.get('request_token');
+    if (requestToken) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        const bDiv = appendMessage('bot', "Linking your Zerodha portfolio... Please wait.");
+        try {
+            const response = await fetch(`/api/zerodha/callback?token=${requestToken}`);
+            const data = await response.json();
+            if (data.success) {
+                localStorage.setItem('zerodha_portfolio', JSON.stringify(data));
+                bDiv.innerHTML = `<span>✅ Portfolio Linked! Ask me to "Analyze my Zerodha" to see the roast.</span>`;
+            }
+        } catch (err) { bDiv.innerText = "Zerodha linking failed."; }
     }
 });
+
 // --- 10. HARSH VOICE INITIALIZATION ---
 window.addEventListener('load', () => {
     if (typeof HarshVoice !== 'undefined') {
-        // Initialize watching the chatContainer
         HarshVoice.init('chatContainer');
-        
-        // If a user is already logged in, get their voice preference from Supabase
         if (_sbClient) {
-            _sbClient.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN') {
-                    HarshVoice.loadPreference();
-                }
+            _sbClient.auth.onAuthStateChange((event) => {
+                if (event === 'SIGNED_IN') HarshVoice.loadPreference();
             });
         }
     }
 });
-// --- GLOBAL EVENT LISTENERS ---
 
-// 1. Click Listener
-if (sendBtn) {
-    sendBtn.onclick = (e) => {
-        handleSend(e);
+// --- 11. SIDEBAR ZERODHA BUTTON ---
+if (zerodhaSidebarBtn) {
+    zerodhaSidebarBtn.onclick = () => {
+        if (typeof startZerodhaScan === 'function') {
+            startZerodhaScan();
+        } else {
+            appendMessage('bot', "Portfolio module not loaded. Check your scripts.");
+        }
     };
 }
 
-// 2. Keyboard Listener (Enter Key)
+// --- 12. GLOBAL EVENT LISTENERS ---
+if (sendBtn) sendBtn.onclick = (e) => handleSend(e);
 if (userInput) {
     userInput.onkeydown = (e) => { 
         if (e.key === "Enter" && !e.shiftKey) { 
-            e.preventDefault(); // CRITICAL: Stops page refresh/signal abortion
+            e.preventDefault(); 
             handleSend(e); 
         }
     };
 }
+        
+       

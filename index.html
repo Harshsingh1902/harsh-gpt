@@ -25,9 +25,13 @@
         </div>
 
         <div class="sidebar-footer">
-            <button class="footer-btn" onclick="triggerHarshInbox()">📧 Scan My Inbox</button>
-            <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
-        </div>
+    <button class="footer-btn" id="zerodha-sidebar-btn">
+        <span class="icon">📈</span> Scan Zerodha Portfolio
+    </button>
+    
+    <button class="footer-btn" onclick="triggerHarshInbox()">📧 Scan My Inbox</button>
+    <button class="footer-btn" onclick="openSettings()">⚙️ Settings</button>
+</div>
     </div>
 
     <div id="settings-modal" class="modal hidden">
@@ -122,6 +126,7 @@
 
     <script src="harsh-gmail.js" defer></script>
     <script src="harsh-voice.js" defer></script>
+    <script type="module" src="zerodha-scan.js"></script>
     <script src="script.js" defer></script>
 
 </body>

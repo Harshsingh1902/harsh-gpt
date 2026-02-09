@@ -693,3 +693,22 @@ input {
     content: "🔊 ";
     font-size: 10px;
 }
+
+/* Sidebar Footer Button Styling */
+#zerodha-sidebar-btn {
+    background: rgba(0, 255, 136, 0.05); /* Slight green tint for money */
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+    margin-bottom: 8px; /* Space between this and Inbox button */
+}
+
+#zerodha-sidebar-btn:hover {
+    background: rgba(0, 255, 136, 0.2);
+    border-color: #00ff88;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+    transform: translateY(-2px);
+}
+
+#zerodha-sidebar-btn .icon {
+    margin-right: 8px;
+}
