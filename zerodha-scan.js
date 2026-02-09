@@ -1,7 +1,12 @@
 // zerodha-scan.js
-
+window.startZerodhaScan = function() {
+    console.log("Zerodha Scan Started...");
 // Replace with your actual Kite API Key from the Developer Console
 const KITE_API_KEY = qij1bqvcu5pe9pr3; 
+const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${KITE_API_KEY}`;
+
+window.location.href = loginUrl;
+};
 
 /**
  * Initializes the Scan Portfolio button.

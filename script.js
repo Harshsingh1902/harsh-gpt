@@ -364,11 +364,18 @@ window.addEventListener('load', () => {
 
 // --- 11. SIDEBAR ZERODHA BUTTON ---
 if (zerodhaSidebarBtn) {
-    zerodhaSidebarBtn.onclick = () => {
-        if (typeof startZerodhaScan === 'function') {
-            startZerodhaScan();
+    zerodhaSidebarBtn.onclick = (e) => {
+        e.preventDefault();
+        
+        // Check both global and local scopes
+        const scanFunc = window.startZerodhaScan || (typeof startZerodhaScan === 'function' ? startZerodhaScan : null);
+        
+        if (scanFunc) {
+            scanFunc();
         } else {
-            appendMessage('bot', "Portfolio module not loaded. Check your scripts.");
+            // Friendly fallback if the script is still loading
+            appendMessage('bot', "The portfolio module is still warming up. Give it a second and try again! 🚀");
+            console.error("Zerodha function not found in window or local scope.");
         }
     };
 }
