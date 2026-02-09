@@ -712,3 +712,11 @@ input {
 #zerodha-sidebar-btn .icon {
     margin-right: 8px;
 }
+
+.sidebar-footer {
+    z-index: 10001 !important; /* Force it to stay on top */
+}
+
+#zerodha-sidebar-btn {
+    pointer-events: auto !important; /* Ensure it accepts clicks */
+}
