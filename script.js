@@ -4,26 +4,30 @@ const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
 // --- ZERODHA CALLBACK HANDLER ---
+let isProcessingToken = false; // Ensure this is at the very top of script.js
+
 window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const requestToken = urlParams.get('request_token');
+    const statusError = urlParams.get('status') === 'error';
 
-    if (requestToken) {
-        console.log("Token received! Processing Zerodha linking...");
+    // 1. Handle actual token reception
+    if (requestToken && !isProcessingToken) {
+        isProcessingToken = true; 
         
-        // Remove the token from the URL so it looks clean
-       window.history.replaceState({}, document.title, window.location.pathname);
-       console.log("Token detected, starting exchange...");
-        handleZerodhaToken(requestToken);
+        // Wipe URL immediately so the token is gone from the address bar
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        console.log("Token detected! Processing unique Zerodha handshake...");
 
-        // Send this token to your backend or process it
         if (typeof handleZerodhaToken === 'function') {
             handleZerodhaToken(requestToken);
         } else {
-            appendMessage('bot', "Linking successful! Now fetching your portfolio... 📈");
-            // Trigger your logic to exchange token for access_token here
+            console.error("handleZerodhaToken function not found!");
         }
-    } else if (urlParams.get('status') === 'error') {
+    } 
+    // 2. Handle Zerodha returning an explicit error
+    else if (statusError) {
         appendMessage('bot', "Zerodha linking failed. Please check your credentials.");
     }
 });
