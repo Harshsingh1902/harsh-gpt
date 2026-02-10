@@ -12,7 +12,9 @@ window.addEventListener('DOMContentLoaded', () => {
         console.log("Token received! Processing Zerodha linking...");
         
         // Remove the token from the URL so it looks clean
-        window.history.replaceState({}, document.title, "/");
+       window.history.replaceState({}, document.title, window.location.pathname);
+       console.log("Token detected, starting exchange...");
+        handleZerodhaToken(requestToken);
 
         // Send this token to your backend or process it
         if (typeof handleZerodhaToken === 'function') {
@@ -30,7 +32,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // --- UPDATED ZERODHA BLOCK FOR SCRIPT.JS ---
 
-// 1. EXCHANGE: Calls your internal Vercel API instead of Zerodha directly (Fixes Mobile Error)
 async function handleZerodhaToken(requestToken) {
     try {
         console.log("Exchanging token via backend...");
@@ -44,11 +45,25 @@ async function handleZerodhaToken(requestToken) {
         const result = await response.json();
 
         if (result.status === 'success') {
-            console.log("Access Token Obtained!");
-            appendMessage('bot', "Zerodha Linked! Analyzing your portfolio now... 📈");
+            // Check if we actually got portfolio data back
+            const data = result.data;
             
-            // Now use the access_token to get the actual holdings
-            fetchPortfolioData(result.data.access_token, 'qij1bqvcu5pe9pr3');
+            if (!data || data.length === 0) {
+                appendMessage('bot', "Zerodha Linked! But your portfolio appears to be empty.");
+                return;
+            }
+
+            appendMessage('bot', "Zerodha Linked! Analyzing your portfolio now... 📈");
+
+            // Format the stocks for the AI (Trading Symbol and Quantity)
+            const summary = data.map(s => `${s.tradingsymbol}: ${s.quantity}`).join(', ');
+            
+            // Trigger the AI analysis
+            if (typeof sendMessage === 'function') {
+                sendMessage(`Analyze my portfolio: ${summary}`);
+            } else {
+                console.error("sendMessage function not found!");
+            }
         } else {
             throw new Error(result.message || "Session exchange failed");
         }

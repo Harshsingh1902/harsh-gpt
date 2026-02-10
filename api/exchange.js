@@ -1,10 +1,10 @@
-// This runs on the server (Vercel) to bypass CORS and hide your secret
+// api/exchange.js
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
 
     const { request_token } = req.body;
     const API_KEY = 'qij1bqvcu5pe9pr3';
-    // We get this from Vercel Environment Variables for safety
+    // Ensure this matches your Vercel Environment Variable name
     const API_SECRET = process.env.KITE_API_SECRET; 
 
     const crypto = require('crypto');
@@ -12,7 +12,8 @@ export default async function handler(req, res) {
     const checksum = crypto.createHash('sha256').update(message).digest('hex');
 
     try {
-        const response = await fetch('https://api.kite.trade/session/token', {
+        // STEP 1: Exchange request_token for access_token
+        const tokenResponse = await fetch('https://api.kite.trade/session/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
@@ -22,9 +23,31 @@ export default async function handler(req, res) {
             })
         });
 
-        const data = await response.json();
-        res.status(200).json(data);
+        const tokenData = await tokenResponse.json();
+
+        if (tokenData.status !== 'success') {
+            return res.status(400).json(tokenData);
+        }
+
+        const accessToken = tokenData.data.access_token;
+
+        // STEP 2: Immediately fetch holdings using the new access_token
+        // Doing this here bypasses mobile CORS issues entirely
+        const holdingsResponse = await fetch('https://api.kite.trade/portfolio/holdings', {
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${API_KEY}:${accessToken}`,
+                'X-Kite-Version': '3'
+            }
+        });
+
+        const holdingsData = await holdingsResponse.json();
+
+        // Send the final holdings data back to the frontend
+        res.status(200).json(holdingsData);
+
     } catch (error) {
+        console.error("Backend Error:", error);
         res.status(500).json({ status: 'error', message: error.message });
     }
 }
