@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -16,6 +17,10 @@
     {
       "source": "/icon-(.*).png",
       "destination": "/public/icon-$1.png"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
     },
     {
       "source": "/(.*)",
