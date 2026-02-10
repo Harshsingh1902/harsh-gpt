@@ -28,28 +28,17 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // --- ZERODHA ENGINE FUNCTIONS ---
 
-// 1. EXCHANGE: Converts the temporary request_token into a permanent access_token
+// --- UPDATED ZERODHA BLOCK FOR SCRIPT.JS ---
+
+// 1. EXCHANGE: Calls your internal Vercel API instead of Zerodha directly (Fixes Mobile Error)
 async function handleZerodhaToken(requestToken) {
-    const API_KEY = 'qij1bqvcu5pe9pr3';
-    // REPLACE 'YOUR_ACTUAL_KITE_API_SECRET' with the secret from your Zerodha Dashboard
-    const API_SECRET = 'mlzsvbgt1k0i12jsa8o8aqut7060g2wf'; 
-
     try {
-        // Generate the mandatory SHA256 Checksum (api_key + request_token + api_secret)
-        const message = API_KEY + requestToken + API_SECRET;
-        const checksum = await generateSHA256(message);
-
-        console.log("Exchanging token for session...");
-
-        // Call Zerodha to get the Session
-        const response = await fetch('https://api.kite.trade/session/token', {
+        console.log("Exchanging token via backend...");
+        
+        const response = await fetch('/api/exchange', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                'api_key': API_KEY,
-                'request_token': requestToken,
-                'checksum': checksum
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_token: requestToken })
         });
 
         const result = await response.json();
@@ -59,9 +48,9 @@ async function handleZerodhaToken(requestToken) {
             appendMessage('bot', "Zerodha Linked! Analyzing your portfolio now... 📈");
             
             // Now use the access_token to get the actual holdings
-            fetchPortfolioData(result.data.access_token, API_KEY);
+            fetchPortfolioData(result.data.access_token, 'qij1bqvcu5pe9pr3');
         } else {
-            throw new Error(result.message);
+            throw new Error(result.message || "Session exchange failed");
         }
     } catch (error) {
         console.error("Zerodha Sync Error:", error);
@@ -69,7 +58,7 @@ async function handleZerodhaToken(requestToken) {
     }
 }
 
-// 2. FETCH: Uses the new access_token to get your stock holdings
+// 2. FETCH: Uses the access_token to get your stock holdings
 async function fetchPortfolioData(accessToken, apiKey) {
     try {
         const response = await fetch('https://api.kite.trade/portfolio/holdings', {
@@ -94,27 +83,22 @@ async function fetchPortfolioData(accessToken, apiKey) {
             ).join(', ');
 
             // Send to AI for analysis
-            // NOTE: Ensure your AI function is named 'sendMessage' or 'getAIResponse' correctly
+            // NOTE: Ensure your AI function is named 'sendMessage' correctly
             if (typeof sendMessage === 'function') {
                 sendMessage(`I just linked my Zerodha. Here is my portfolio: ${portfolioSummary}. Please analyze it for risks and gains.`);
             } else {
                 console.log("Portfolio Data:", portfolioSummary);
                 appendMessage('bot', "I've fetched your data, but I couldn't find your AI chat function to analyze it.");
             }
+        } else {
+            throw new Error(holdings.message);
         }
     } catch (err) {
         console.error("Data Fetch Error:", err);
         appendMessage('bot', "Error fetching holdings. Please try again.");
     }
 }
-
-// 3. HELPER: Generates the SHA256 security hash required by Zerodha
-async function generateSHA256(message) {
-    const msgUint8 = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
+// Note: generateSHA256 is no longer needed in script.js as it's handled by the backend!
 
 // --- 2. GLOBAL UTILITY FUNCTIONS ---
 window.copyToClipboard = function(content, btn) {
