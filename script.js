@@ -32,7 +32,7 @@ window.addEventListener('DOMContentLoaded', () => {
 async function handleZerodhaToken(requestToken) {
     const API_KEY = 'qij1bqvcu5pe9pr3';
     // REPLACE 'YOUR_ACTUAL_KITE_API_SECRET' with the secret from your Zerodha Dashboard
-    const API_SECRET = 'YOUR_ACTUAL_KITE_API_SECRET'; 
+    const API_SECRET = 'mlzsvbgt1k0i12jsa8o8aqut7060g2wf'; 
 
     try {
         // Generate the mandatory SHA256 Checksum (api_key + request_token + api_secret)
