@@ -3,6 +3,29 @@ const _sbURL = 'https://dfatmvkqbccgflrdjhcm.supabase.co';
 const _sbKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRmYXRtdmtxYmNjZ2ZscmRqaGNtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNjQ4MzcsImV4cCI6MjA4NTg0MDgzN30.eVycsYQZIxZTBYfkGT_OUipKNAejw0Aurk0FOTJkuK0';
 const _sbClient = window.supabase ? window.supabase.createClient(_sbURL, _sbKEY) : null;
 
+// --- ZERODHA CALLBACK HANDLER ---
+window.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestToken = urlParams.get('request_token');
+
+    if (requestToken) {
+        console.log("Token received! Processing Zerodha linking...");
+        
+        // Remove the token from the URL so it looks clean
+        window.history.replaceState({}, document.title, "/");
+
+        // Send this token to your backend or process it
+        if (typeof handleZerodhaToken === 'function') {
+            handleZerodhaToken(requestToken);
+        } else {
+            appendMessage('bot', "Linking successful! Now fetching your portfolio... 📈");
+            // Trigger your logic to exchange token for access_token here
+        }
+    } else if (urlParams.get('status') === 'error') {
+        appendMessage('bot', "Zerodha linking failed. Please check your credentials.");
+    }
+});
+
 // --- 2. GLOBAL UTILITY FUNCTIONS ---
 window.copyToClipboard = function(content, btn) {
     navigator.clipboard.writeText(content).then(() => {
